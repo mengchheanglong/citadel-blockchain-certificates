@@ -12,9 +12,9 @@ export default function LandingPage() {
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
-          <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
-            <CitadelLogo className="h-10 w-10" />
-            <span className="text-xl font-bold tracking-tight text-slate-900">
+          <Link href="/" className="flex items-center gap-3 transition hover:opacity-90">
+            <CitadelLogo className="h-12 w-12" />
+            <span className="text-2xl font-bold tracking-tight text-slate-900">
               Citadel
             </span>
           </Link>
@@ -248,9 +248,9 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8 text-slate-500">
         <div className="container mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2.5">
-            <CitadelLogo className="h-7 w-7" />
-            <span className="font-semibold text-slate-900">Citadel</span>
+          <div className="flex items-center gap-3">
+            <CitadelLogo className="h-9 w-9" />
+            <span className="text-lg font-bold text-slate-900">Citadel</span>
           </div>
           <p className="text-center text-sm">
             &copy; {currentYear} Citadel. All rights reserved. Powered by Ethereum smart contracts.

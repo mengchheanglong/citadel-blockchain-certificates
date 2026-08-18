@@ -7,17 +7,17 @@ interface CitadelLogoProps {
 }
 
 export function CitadelLogo({
-  className = 'h-9 w-9',
-  size = 36,
+  className = 'h-11 w-11',
+  size = 56,
 }: CitadelLogoProps) {
   return (
-    <div className={`relative overflow-hidden rounded-lg shadow-sm border border-slate-100 flex items-center justify-center bg-white ${className}`}>
+    <div className={`relative flex items-center justify-center shrink-0 ${className}`}>
       <Image
-        src="/citadel-logo.jpg"
-        alt="Citadel Logo"
+        src="/citadel-logo.png"
+        alt="Citadel Emblem"
         width={size * 2}
         height={size * 2}
-        className="h-full w-full object-cover"
+        className="h-full w-full object-contain filter drop-shadow-sm transition-transform hover:scale-105"
         priority
       />
     </div>
