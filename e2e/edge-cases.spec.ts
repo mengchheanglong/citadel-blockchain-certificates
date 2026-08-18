@@ -149,7 +149,7 @@ test.describe('Blockchain Certificate Platform - UI Edge Cases', () => {
     await page.click('button:has-text("Verify")');
 
     // Wait for result page
-    await page.waitForURL(`**/verify/${encodeURIComponent(`  ${issuedCertId.toLowerCase()}  `)}*`);
+    await page.waitForURL(`**/verify/${encodeURIComponent(issuedCertId.toLowerCase())}*`);
     
     // Verify it resolved correctly despite the spaces and casing
     await page.waitForSelector('text=Valid');
