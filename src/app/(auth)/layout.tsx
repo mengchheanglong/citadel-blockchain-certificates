@@ -1,6 +1,7 @@
 import React from 'react';
 import Link from 'next/link';
-import { Shield, ArrowLeft } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function AuthLayout({
   children,
@@ -22,7 +23,7 @@ export default function AuthLayout({
 
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <Shield className="h-4 w-4" />
+              <CitadelLogo className="h-4 w-4" />
             </div>
             <span className="font-bold tracking-tight text-slate-900">
               Citadel

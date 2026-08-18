@@ -19,6 +19,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { cn } from '@/lib/utils';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function DashboardLayout({
   children,
@@ -91,7 +92,7 @@ export default function DashboardLayout({
         <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
           <Link href="/dashboard" className="flex items-center gap-2.5">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <Shield className="h-5 w-5" />
+              <CitadelLogo className="h-5 w-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Citadel

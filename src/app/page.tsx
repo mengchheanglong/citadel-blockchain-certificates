@@ -2,6 +2,7 @@ import Link from 'next/link';
 import { Shield, Search, QrCode, ArrowRight, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function LandingPage() {
   const currentYear = new Date().getFullYear();
@@ -13,7 +14,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
             <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <Shield className="h-5 w-5" />
+              <CitadelLogo className="h-5 w-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Citadel
@@ -251,7 +252,7 @@ export default function LandingPage() {
         <div className="container mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
           <div className="flex items-center gap-2">
             <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600 text-white">
-              <Shield className="h-3.5 w-3.5" />
+              <CitadelLogo className="h-4 w-4" />
             </div>
             <span className="font-semibold text-slate-900">Citadel</span>
           </div>

@@ -36,6 +36,7 @@ import {
   CardContent,
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 import {
   formatDate,
   shortenHash,
@@ -153,7 +154,7 @@ export default function VerificationResultPage() {
 
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <Shield className="h-4 w-4" />
+              <CitadelLogo className="h-4 w-4" />
             </div>
             <span className="font-bold tracking-tight text-slate-900">
               Citadel

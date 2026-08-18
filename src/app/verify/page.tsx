@@ -17,6 +17,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function VerifyEntryPage() {
   const router = useRouter();
@@ -115,7 +116,7 @@ export default function VerifyEntryPage() {
 
           <Link href="/" className="flex items-center gap-2">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <Shield className="h-4 w-4" />
+              <CitadelLogo className="h-4 w-4" />
             </div>
             <span className="font-bold tracking-tight text-slate-900">
               Citadel
