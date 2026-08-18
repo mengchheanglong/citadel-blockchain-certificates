@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { useSupabaseAuth } from '@/components/auth/supabase-provider';
+import { createClient } from '@/utils/supabase/client';
 import {
   Building2,
   Mail,
@@ -11,8 +12,14 @@ import {
   Info,
   KeyRound,
   FileCheck2,
+  Lock,
+  Loader2,
+  ShieldCheck,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import {
   Card,
   CardHeader,
@@ -26,8 +33,15 @@ import { useToast } from '@/components/ui/use-toast';
 export default function SettingsPage() {
   const { organization } = useSupabaseAuth();
   const { toast } = useToast();
+  const [supabase] = useState(() => createClient());
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+
+  // Change Password state
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
+  const [passwordError, setPasswordError] = useState<string | null>(null);
 
   // Contract address (can be from env or default)
   const contractAddress =
@@ -48,6 +62,50 @@ export default function SettingsPage() {
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
+  const handleUpdatePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setPasswordError(null);
+
+    if (!newPassword || newPassword.length < 6) {
+      setPasswordError('New password must be at least 6 characters long.');
+      return;
+    }
+
+    if (newPassword !== confirmPassword) {
+      setPasswordError('Passwords do not match.');
+      return;
+    }
+
+    setIsUpdatingPassword(true);
+
+    try {
+      const { error } = await supabase.auth.updateUser({
+        password: newPassword,
+      });
+
+      if (error) {
+        setPasswordError(error.message);
+        toast({
+          variant: 'destructive',
+          title: 'Update Failed',
+          description: error.message,
+        });
+        return;
+      }
+
+      toast({
+        title: 'Password Updated',
+        description: 'Your account password has been updated successfully.',
+      });
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err: any) {
+      setPasswordError(err?.message || 'Failed to update password.');
+    } finally {
+      setIsUpdatingPassword(false);
+    }
+  };
+
   return (
     <div className="mx-auto max-w-4xl space-y-8">
       {/* Page Header */}
@@ -56,7 +114,7 @@ export default function SettingsPage() {
           Organization Settings
         </h1>
         <p className="mt-1 text-sm text-slate-500">
-          Manage your organization profile, view smart contract parameters, and inspect blockchain infrastructure configurations.
+          Manage your organization profile, security credentials, and inspect blockchain infrastructure configurations.
         </p>
       </div>
 
@@ -111,6 +169,80 @@ export default function SettingsPage() {
                 </p>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Security & Password Card */}
+        <Card className="border-slate-200 bg-white shadow-sm">
+          <CardHeader className="border-b border-slate-100 pb-4">
+            <div className="flex items-center gap-2 text-blue-600">
+              <ShieldCheck className="h-5 w-5" />
+              <CardTitle className="text-lg">Security & Password</CardTitle>
+            </div>
+            <CardDescription>
+              Update your account password and security credentials
+            </CardDescription>
+          </CardHeader>
+
+          <CardContent className="pt-6">
+            <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
+              {passwordError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                  {passwordError}
+                </div>
+              )}
+
+              <div className="space-y-1.5">
+                <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">
+                  New Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="newPassword"
+                    type="password"
+                    placeholder="At least 6 characters"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    disabled={isUpdatingPassword}
+                    className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">
+                  Confirm New Password
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Input
+                    id="confirmNewPassword"
+                    type="password"
+                    placeholder="Confirm new password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isUpdatingPassword}
+                    className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                  />
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isUpdatingPassword || !newPassword}
+                className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+              >
+                {isUpdatingPassword ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Updating...
+                  </>
+                ) : (
+                  'Update Password'
+                )}
+              </Button>
+            </form>
           </CardContent>
         </Card>
 
