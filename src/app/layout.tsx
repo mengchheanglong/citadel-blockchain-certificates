@@ -14,6 +14,13 @@ export const metadata: Metadata = {
   title: 'Citadel - Immutable Blockchain Certificate Platform',
   description:
     'Issue and verify tamper-proof academic and professional certificates anchored on the Ethereum blockchain.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/citadel-logo.png', type: 'image/png' },
+    ],
+    apple: [{ url: '/apple-icon.png' }],
+  },
 };
 
 export default function RootLayout({
