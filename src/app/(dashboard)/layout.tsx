@@ -91,9 +91,7 @@ export default function DashboardLayout({
         {/* Sidebar Header / Logo */}
         <div className="flex h-16 items-center justify-between border-b border-slate-100 px-6">
           <Link href="/dashboard" className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <CitadelLogo className="h-5 w-5" />
-            </div>
+            <CitadelLogo className="h-9 w-9" />
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Citadel
             </span>

@@ -13,9 +13,7 @@ export default function LandingPage() {
       <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
         <div className="container mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <Link href="/" className="flex items-center gap-2.5 transition hover:opacity-90">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <CitadelLogo className="h-5 w-5" />
-            </div>
+            <CitadelLogo className="h-10 w-10" />
             <span className="text-xl font-bold tracking-tight text-slate-900">
               Citadel
             </span>
@@ -250,10 +248,8 @@ export default function LandingPage() {
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-8 text-slate-500">
         <div className="container mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-4 sm:flex-row sm:px-6 lg:px-8">
-          <div className="flex items-center gap-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600 text-white">
-              <CitadelLogo className="h-4 w-4" />
-            </div>
+          <div className="flex items-center gap-2.5">
+            <CitadelLogo className="h-7 w-7" />
             <span className="font-semibold text-slate-900">Citadel</span>
           </div>
           <p className="text-center text-sm">

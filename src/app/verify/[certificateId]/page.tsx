@@ -152,10 +152,8 @@ export default function VerificationResultPage() {
             <span>Verify Another</span>
           </Link>
 
-          <Link href="/" className="flex items-center gap-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
-              <CitadelLogo className="h-4 w-4" />
-            </div>
+          <Link href="/" className="flex items-center gap-2.5">
+            <CitadelLogo className="h-9 w-9" />
             <span className="font-bold tracking-tight text-slate-900">
               Citadel
             </span>
