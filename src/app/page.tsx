@@ -29,23 +29,10 @@ import {
   BookOpen,
   Award,
   Star,
+  Palette,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CitadelLogo } from '@/components/ui/citadel-logo';
-
-/* =========================================================================
-   100% EXACT BLOCKCHAIN.COM (2026) DESIGN REPLICA FOR CITADEL
-   Colors:
-   - Primary Background: #000000 (Pure Black)
-   - Secondary Surfaces: #101010, #12151E, #181818
-   - Borders: #222222, #1F2430
-   - Accent Primary: #0C6CF2 (Blockchain Electric Cobalt Blue)
-   - Accent Secondary: #1032CF (Deep Royal Blue)
-   - Accent Cyan: #00C2FF
-   - Success Green: #00D26A / #10B981
-   - Text: #FFFFFF, #8F96A3, #555555
-   - Fonts: Inter (tight -0.04em tracking, massive grotesque bold scale)
-   ========================================================================= */
 
 export default function LandingPage() {
   const router = useRouter();
@@ -53,13 +40,21 @@ export default function LandingPage() {
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [activeTab, setActiveTab] = useState<'cert' | 'contract'>('cert');
+  const [colorMode, setColorMode] = useState<'blue' | 'burgundy'>('blue');
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 20);
     window.addEventListener('scroll', handleScroll, { passive: true });
+    const saved = localStorage.getItem('citadel-theme-mode') as 'blue' | 'burgundy' | null;
+    if (saved) setColorMode(saved);
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  const toggleTheme = (mode: 'blue' | 'burgundy') => {
+    setColorMode(mode);
+    localStorage.setItem('citadel-theme-mode', mode);
+  };
 
   const handleHeroSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -67,7 +62,30 @@ export default function LandingPage() {
     router.push(`/verify/${encodeURIComponent(certInput.trim())}`);
   };
 
-  // Real tokens copied from Blockchain.com assets
+  // Color tokens based on active mode
+  const theme = {
+    blue: {
+      primary: '#0C6CF2',
+      primaryHover: '#0050D8',
+      glow: 'bg-[#0C6CF2]/12',
+      glowShadow: 'shadow-[0_0_24px_rgba(12,108,242,0.35)]',
+      gradient: 'from-[#0C6CF2] via-[#00C2FF] to-[#A855F7]',
+      textAccent: 'text-[#0C6CF2]',
+      borderHover: 'hover:border-[#0C6CF2]/60',
+      badgeBg: 'bg-[#0C6CF2]/10 border-[#0C6CF2]/30 text-[#0C6CF2]',
+    },
+    burgundy: {
+      primary: '#C8102E',
+      primaryHover: '#9E1B32',
+      glow: 'bg-[#C8102E]/12',
+      glowShadow: 'shadow-[0_0_24px_rgba(200,16,46,0.35)]',
+      gradient: 'from-[#C8102E] via-[#FF4D6D] to-[#E63946]',
+      textAccent: 'text-[#C8102E]',
+      borderHover: 'hover:border-[#C8102E]/60',
+      badgeBg: 'bg-[#C8102E]/10 border-[#C8102E]/30 text-[#FF4D6D]',
+    },
+  }[colorMode];
+
   const tokenMarquee = [
     { name: 'Ethereum', symbol: 'ETH', price: '$2,648.10', change: '+2.41%', svg: '/blockchain/prices-eth.svg', isUp: true },
     { name: 'Bitcoin', symbol: 'BTC', price: '$64,120.00', change: '+1.85%', svg: '/blockchain/prices-btc.svg', isUp: true },
@@ -81,15 +99,17 @@ export default function LandingPage() {
   return (
     <div className="flex min-h-screen flex-col bg-[#000000] text-white selection:bg-[#0C6CF2] selection:text-white antialiased overflow-x-hidden font-sans">
       {/* ========================================================================= */}
-      {/* AMBIENT BACKGROUND GLOW                                                   */}
+      {/* AMBIENT BACKGROUND GLOWS                                                  */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-48 left-[25%] w-[800px] h-[800px] rounded-full bg-[#0C6CF2]/10 blur-[190px] animate-glow-pulse" />
+        <div
+          className={`absolute -top-48 left-[25%] w-[800px] h-[800px] rounded-full ${theme.glow} blur-[190px] animate-glow-pulse transition-all duration-700`}
+        />
         <div className="absolute top-[40%] -right-48 w-[600px] h-[600px] rounded-full bg-[#1032CF]/8 blur-[180px] animate-glow-pulse [animation-delay:3.5s]" />
       </div>
 
       {/* ========================================================================= */}
-      {/* TOP NAVIGATION BAR (Exact Blockchain.com Navbar)                          */}
+      {/* TOP NAVIGATION BAR WITH THEME SWITCHER (Both Blue & Burgundy)             */}
       {/* ========================================================================= */}
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-300 ${
@@ -113,27 +133,56 @@ export default function LandingPage() {
             <Link href="#explorer-section" className="transition hover:text-white">Explorer</Link>
             <Link href="#institutional" className="transition hover:text-white">Institutional</Link>
             <Link href="#how-it-works" className="transition hover:text-white">How It Works</Link>
-            <Link href="/verify" className="flex items-center gap-1.5 text-[#0C6CF2] hover:text-[#00C2FF] transition font-bold">
+            <Link href="/verify" className={`flex items-center gap-1.5 ${theme.textAccent} hover:underline transition font-bold`}>
               <Activity className="h-4 w-4" />
               Verify
             </Link>
           </nav>
 
-          {/* Action Buttons */}
-          <div className="hidden lg:flex items-center gap-3">
+          {/* Right Action Group */}
+          <div className="hidden lg:flex items-center gap-4">
+            {/* Dual Theme Switcher */}
+            <div className="flex items-center rounded-full border border-[#222222] bg-[#121212] p-1 text-xs font-bold">
+              <button
+                onClick={() => toggleTheme('blue')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all ${
+                  colorMode === 'blue'
+                    ? 'bg-[#0C6CF2] text-white shadow-sm'
+                    : 'text-[#8F96A3] hover:text-white'
+                }`}
+              >
+                <span className="h-2 w-2 rounded-full bg-blue-400" />
+                Cobalt
+              </button>
+              <button
+                onClick={() => toggleTheme('burgundy')}
+                className={`flex items-center gap-1.5 px-3 py-1 rounded-full transition-all ${
+                  colorMode === 'burgundy'
+                    ? 'bg-[#C8102E] text-white shadow-sm'
+                    : 'text-[#8F96A3] hover:text-white'
+                }`}
+              >
+                <span className="h-2 w-2 rounded-full bg-rose-400" />
+                Burgundy
+              </button>
+            </div>
+
             <Link href="/login">
               <button className="h-10 px-5 rounded-full text-[14px] font-bold text-[#8F96A3] transition hover:text-white hover:bg-[#181818]">
                 Log In
               </button>
             </Link>
             <Link href="/register">
-              <button className="h-10 px-6 rounded-full bg-[#0C6CF2] hover:bg-[#0050D8] text-[14px] font-bold text-white transition shadow-[0_0_24px_rgba(12,108,242,0.35)] hover:scale-105 active:scale-95">
+              <button
+                className={`h-10 px-6 rounded-full text-[14px] font-bold text-white transition-all ${theme.glowShadow} hover:scale-105 active:scale-95`}
+                style={{ backgroundColor: theme.primary }}
+              >
                 Sign Up
               </button>
             </Link>
           </div>
 
-          {/* Mobile Menu */}
+          {/* Mobile Menu Toggle */}
           <button
             className="lg:hidden p-2 text-[#8F96A3] hover:text-white transition"
             onClick={() => setMobileNav(!mobileNav)}
@@ -145,10 +194,27 @@ export default function LandingPage() {
         {/* Mobile Drawer */}
         {mobileNav && (
           <div className="lg:hidden border-t border-[#222222] bg-[#000000]/98 px-6 pb-6 pt-4 space-y-4 animate-fade-in-up">
+            <div className="flex items-center justify-between py-2 border-b border-[#222222]">
+              <span className="text-xs text-[#8F96A3] font-bold">Theme Style</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => toggleTheme('blue')}
+                  className={`px-3 py-1 text-xs rounded-full ${colorMode === 'blue' ? 'bg-[#0C6CF2] text-white' : 'text-[#8F96A3]'}`}
+                >
+                  Cobalt Blue
+                </button>
+                <button
+                  onClick={() => toggleTheme('burgundy')}
+                  className={`px-3 py-1 text-xs rounded-full ${colorMode === 'burgundy' ? 'bg-[#C8102E] text-white' : 'text-[#8F96A3]'}`}
+                >
+                  Burgundy Red
+                </button>
+              </div>
+            </div>
             <Link href="#features" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Products</Link>
             <Link href="#explorer-section" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Explorer</Link>
             <Link href="#institutional" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Institutional</Link>
-            <Link href="/verify" className="block text-[15px] text-[#0C6CF2] hover:text-white py-2" onClick={() => setMobileNav(false)}>Verify</Link>
+            <Link href="/verify" className={`block text-[15px] ${theme.textAccent} hover:text-white py-2`} onClick={() => setMobileNav(false)}>Verify</Link>
             <div className="pt-2 flex gap-3">
               <Link href="/login" className="flex-1">
                 <button className="w-full h-11 rounded-full border border-[#222222] text-[14px] font-bold text-[#8F96A3] hover:text-white">
@@ -156,7 +222,7 @@ export default function LandingPage() {
                 </button>
               </Link>
               <Link href="/register" className="flex-1">
-                <button className="w-full h-11 rounded-full bg-[#0C6CF2] text-[14px] font-bold text-white">
+                <button className="w-full h-11 rounded-full text-[14px] font-bold text-white shadow-lg" style={{ backgroundColor: theme.primary }}>
                   Sign Up
                 </button>
               </Link>
@@ -178,7 +244,7 @@ export default function LandingPage() {
                 {/* Headline */}
                 <h1 className="text-[48px] sm:text-[68px] lg:text-[80px] font-[900] leading-[1.0] tracking-[-0.04em] text-white">
                   Be Your Own <br />
-                  <span className="text-[#0C6CF2]">Certificate Authority</span>
+                  <span className={`${theme.textAccent} transition-colors duration-500`}>Certificate Authority</span>
                   <span className="text-white">.</span>
                 </h1>
 
@@ -187,22 +253,22 @@ export default function LandingPage() {
                   Issuing platform and on-chain credential registry, all in one application.
                 </p>
 
-                {/* 4 Hero Feature Bullets (Exact from Blockchain.com Section 1) */}
+                {/* 4 Feature Bullets */}
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[560px] mx-auto lg:mx-0 text-left text-xs font-semibold text-slate-300">
                   <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
-                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 transition-colors" style={{ color: theme.primary }} />
                     <span>Seamless issuance & verification</span>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
-                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 transition-colors" style={{ color: theme.primary }} />
                     <span>0% Counterfeit blockchain guarantee</span>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
-                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 transition-colors" style={{ color: theme.primary }} />
                     <span>Dynamic PDF & high-res QR engine</span>
                   </div>
                   <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
-                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <CheckCircle2 className="h-4 w-4 shrink-0 transition-colors" style={{ color: theme.primary }} />
                     <span>Automated recipient email dispatch</span>
                   </div>
                 </div>
@@ -224,7 +290,8 @@ export default function LandingPage() {
                   </div>
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 bg-[#0C6CF2] hover:bg-[#0050D8] text-white text-[14px] font-bold py-3.5 px-7 rounded-xl sm:rounded-full shrink-0 shadow-lg shadow-[#0C6CF2]/30 transition hover:scale-105 active:scale-95"
+                    className="flex items-center justify-center gap-2 text-white text-[14px] font-bold py-3.5 px-7 rounded-xl sm:rounded-full shrink-0 shadow-lg transition hover:scale-105 active:scale-95"
+                    style={{ backgroundColor: theme.primary }}
                   >
                     Verify Credential
                     <ArrowRight className="h-4 w-4" />
@@ -251,11 +318,11 @@ export default function LandingPage() {
                     </span>
                   </div>
 
-                  {/* Blockchain Readout */}
+                  {/* Blockchain Technical Readout */}
                   <div className="space-y-3.5 text-[12px] font-mono">
                     <div className="rounded-xl bg-[#000000] p-3.5 border border-[#222222]">
                       <span className="text-[10px] text-[#555555] uppercase tracking-widest">Certificate ID</span>
-                      <p className="font-bold text-[#0C6CF2] mt-1 text-[14px]">CERT-2026-OXF942K</p>
+                      <p className="font-bold mt-1 text-[14px]" style={{ color: theme.primary }}>CERT-2026-OXF942K</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
@@ -279,7 +346,7 @@ export default function LandingPage() {
                     <div className="grid grid-cols-2 gap-3 text-[11px]">
                       <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
                         <span className="text-[10px] text-[#555555]">Network</span>
-                        <p className="text-[#0C6CF2] font-semibold mt-0.5 text-[12px]">Sepolia EVM</p>
+                        <p className="font-semibold mt-0.5 text-[12px]" style={{ color: theme.primary }}>Sepolia EVM</p>
                       </div>
                       <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
                         <span className="text-[10px] text-[#555555]">Status</span>
@@ -291,12 +358,13 @@ export default function LandingPage() {
                   {/* Footer */}
                   <div className="mt-5 pt-4 border-t border-[#222222] flex items-center justify-between text-[12px]">
                     <div className="flex items-center gap-2 text-[#555555]">
-                      <QrCode className="h-4 w-4 text-[#0C6CF2]" />
+                      <QrCode className="h-4 w-4" style={{ color: theme.primary }} />
                       <span>Instant QR Scanner</span>
                     </div>
                     <Link
                       href="/verify"
-                      className="text-[#0C6CF2] hover:text-[#00C2FF] font-bold inline-flex items-center gap-1 transition"
+                      className="font-bold inline-flex items-center gap-1 transition hover:underline"
+                      style={{ color: theme.primary }}
                     >
                       Open Live Explorer
                       <ArrowUpRight className="h-3.5 w-3.5" />
@@ -367,7 +435,7 @@ export default function LandingPage() {
               {/* Feature 1: Large Span */}
               <div className="md:col-span-2 group rounded-3xl border border-[#222222] bg-[#101010] p-8 sm:p-10 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                 <div className="space-y-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0C6CF2]/15 text-[#0C6CF2] border border-[#0C6CF2]/30">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#121212] border border-[#222222]" style={{ color: theme.primary }}>
                     <Lock className="h-6 w-6" />
                   </div>
                   <h3 className="text-[26px] sm:text-[32px] font-[900] text-white tracking-[-0.02em]">
@@ -378,7 +446,7 @@ export default function LandingPage() {
                   </p>
                 </div>
                 <div className="mt-8 pt-5 border-t border-[#222222] flex flex-wrap items-center gap-4 text-[12px] font-mono text-[#666666]">
-                  <span className="text-[#0C6CF2]">Solidity 0.8.20</span>
+                  <span style={{ color: theme.primary }}>Solidity 0.8.20</span>
                   <span>•</span>
                   <span>EVM Bytecode Verified</span>
                   <span>•</span>
@@ -389,7 +457,7 @@ export default function LandingPage() {
               {/* Feature 2: High Bento */}
               <div className="group rounded-3xl border border-[#222222] bg-[#101010] p-8 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                 <div className="space-y-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00C2FF]/15 text-[#00C2FF] border border-[#00C2FF]/30">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#121212] border border-[#222222]" style={{ color: theme.primary }}>
                     <QrCode className="h-6 w-6" />
                   </div>
                   <h3 className="text-[22px] font-[900] text-white tracking-[-0.02em]">
@@ -399,7 +467,7 @@ export default function LandingPage() {
                     Embedded high-res QR codes allow employers and recruiters to point any smartphone camera at a paper or digital diploma to verify on-chain authenticity in real-time.
                   </p>
                 </div>
-                <Link href="/verify" className="mt-6 text-[13px] font-bold text-[#0C6CF2] hover:text-[#00C2FF] inline-flex items-center gap-1.5 transition">
+                <Link href="/verify" className="mt-6 text-[13px] font-bold hover:underline inline-flex items-center gap-1.5 transition" style={{ color: theme.primary }}>
                   Launch Scanner Portal
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
@@ -413,7 +481,7 @@ export default function LandingPage() {
               ].map((f, i) => (
                 <div key={i} className="group rounded-3xl border border-[#222222] bg-[#101010] p-7 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                   <div className="space-y-3.5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0C6CF2]/10 text-[#0C6CF2] border border-[#0C6CF2]/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#121212] border border-[#222222]" style={{ color: theme.primary }}>
                       <f.icon className="h-5 w-5" />
                     </div>
                     <h3 className="text-[18px] font-bold text-white">{f.title}</h3>
@@ -432,7 +500,7 @@ export default function LandingPage() {
           <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
               <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#0C6CF2]">Consensus</span>
+                <span className="text-xs font-bold uppercase tracking-widest" style={{ color: theme.primary }}>Consensus</span>
                 <p className="text-3xl font-[900] text-white">Built on Ethereum</p>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
                   Cryptographic proofs anchored directly to Ethereum ledger blocks without reliance on proprietary servers.
@@ -441,7 +509,7 @@ export default function LandingPage() {
 
               <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-[#00D26A]">Security First</span>
-                <p className="text-3xl font-[900] text-white">0% Counterfeit Funds</p>
+                <p className="text-3xl font-[900] text-white">0% Counterfeit</p>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
                   We&apos;ve never had a forged credential. SHA-256 signatures ensure certificates cannot be altered once mined.
                 </p>
@@ -467,7 +535,7 @@ export default function LandingPage() {
               
               {/* Left copy */}
               <div className="lg:col-span-5 space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#0C6CF2]/30 bg-[#0C6CF2]/10 px-4 py-1 text-xs font-semibold text-[#0C6CF2]">
+                <div className="inline-flex items-center gap-2 rounded-full border px-4 py-1 text-xs font-semibold" style={{ borderColor: `${theme.primary}40`, backgroundColor: `${theme.primary}15`, color: theme.primary }}>
                   <Activity className="h-3.5 w-3.5" />
                   Public Ledger Explorer
                 </div>
@@ -479,7 +547,7 @@ export default function LandingPage() {
                 </p>
                 <div className="pt-2">
                   <Link href="/verify">
-                    <Button className="bg-[#0C6CF2] hover:bg-[#0050D8] text-white font-bold rounded-full px-7 shadow-lg shadow-[#0C6CF2]/35">
+                    <Button className="text-white font-bold rounded-full px-7 shadow-lg" style={{ backgroundColor: theme.primary }}>
                       Launch Explorer Portal &rarr;
                     </Button>
                   </Link>
@@ -495,16 +563,18 @@ export default function LandingPage() {
                       <button
                         onClick={() => setActiveTab('cert')}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                          activeTab === 'cert' ? 'bg-[#0C6CF2] text-white' : 'text-[#8F96A3] hover:text-white'
+                          activeTab === 'cert' ? 'text-white' : 'text-[#8F96A3] hover:text-white'
                         }`}
+                        style={{ backgroundColor: activeTab === 'cert' ? theme.primary : 'transparent' }}
                       >
                         Latest Verified Credentials
                       </button>
                       <button
                         onClick={() => setActiveTab('contract')}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                          activeTab === 'contract' ? 'bg-[#0C6CF2] text-white' : 'text-[#8F96A3] hover:text-white'
+                          activeTab === 'contract' ? 'text-white' : 'text-[#8F96A3] hover:text-white'
                         }`}
+                        style={{ backgroundColor: activeTab === 'contract' ? theme.primary : 'transparent' }}
                       >
                         Smart Contract State
                       </button>
@@ -525,7 +595,7 @@ export default function LandingPage() {
                       ].map((item, i) => (
                         <div key={i} className="flex items-center justify-between p-3.5 rounded-xl bg-[#000000] border border-[#222222] hover:border-[#0C6CF2]/40 transition">
                           <div>
-                            <span className="font-bold text-[#0C6CF2]">{item.id}</span>
+                            <span className="font-bold" style={{ color: theme.primary }}>{item.id}</span>
                             <p className="text-[#8F96A3] text-[11px] mt-0.5">{item.recipient} • {item.course}</p>
                           </div>
                           <div className="text-right">
@@ -541,7 +611,7 @@ export default function LandingPage() {
                     <div className="space-y-3 font-mono text-xs">
                       <div className="p-3.5 rounded-xl bg-[#000000] border border-[#222222]">
                         <span className="text-[#555555] text-[10px]">Contract Registry Address</span>
-                        <p className="text-[#0C6CF2] text-[11px] break-all font-bold mt-0.5">
+                        <p className="text-[11px] break-all font-bold mt-0.5" style={{ color: theme.primary }}>
                           0x5FbDB2315678afecb367f032d93F642f64180aa3
                         </p>
                       </div>
@@ -580,7 +650,7 @@ export default function LandingPage() {
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#0C6CF2]/15 text-[#0C6CF2] flex items-center justify-center font-bold">
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center font-bold bg-[#121212]" style={{ color: theme.primary }}>
                   01
                 </div>
                 <h3 className="text-xl font-bold text-white">Batch Credential Minting</h3>
@@ -590,7 +660,7 @@ export default function LandingPage() {
               </div>
 
               <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#00C2FF]/15 text-[#00C2FF] flex items-center justify-center font-bold">
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center font-bold bg-[#121212]" style={{ color: theme.primary }}>
                   02
                 </div>
                 <h3 className="text-xl font-bold text-white">Automated Delivery</h3>
@@ -600,7 +670,7 @@ export default function LandingPage() {
               </div>
 
               <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#00D26A]/15 text-[#00D26A] flex items-center justify-center font-bold">
+                <div className="h-10 w-10 rounded-xl flex items-center justify-center font-bold bg-[#121212]" style={{ color: theme.primary }}>
                   03
                 </div>
                 <h3 className="text-xl font-bold text-white">Secure Custody & Keys</h3>
@@ -623,7 +693,7 @@ export default function LandingPage() {
                 <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">Fraud Rate</p>
               </div>
               <div className="space-y-1">
-                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em] text-[#0C6CF2]">100%</p>
+                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em]" style={{ color: theme.primary }}>100%</p>
                 <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">On-Chain Consensus</p>
               </div>
               <div className="space-y-1">
@@ -667,7 +737,7 @@ export default function LandingPage() {
                   What&apos;s been happening <br />and latest research
                 </h2>
               </div>
-              <Link href="/verify" className="text-sm font-semibold text-[#0C6CF2] hover:underline inline-flex items-center gap-1">
+              <Link href="/verify" className="text-sm font-semibold hover:underline inline-flex items-center gap-1" style={{ color: theme.primary }}>
                 Read all articles &rarr;
               </Link>
             </div>
@@ -680,14 +750,14 @@ export default function LandingPage() {
               ].map((art, i) => (
                 <div key={i} className="rounded-3xl border border-[#222222] bg-[#101010] p-7 space-y-4 hover:border-[#0C6CF2]/60 transition">
                   <div className="flex items-center justify-between text-xs text-[#555555]">
-                    <span className="font-mono text-[#0C6CF2] font-bold">{art.tag}</span>
+                    <span className="font-mono font-bold" style={{ color: theme.primary }}>{art.tag}</span>
                     <span>{art.date}</span>
                   </div>
                   <h3 className="text-lg font-bold text-white leading-snug">{art.title}</h3>
                   <p className="text-xs text-[#8F96A3]">
                     Deep dive into how decentralized consensus eliminates counterfeit documents permanently.
                   </p>
-                  <div className="pt-2 text-xs font-bold text-[#0C6CF2]">
+                  <div className="pt-2 text-xs font-bold" style={{ color: theme.primary }}>
                     Read more →
                   </div>
                 </div>
@@ -725,7 +795,7 @@ export default function LandingPage() {
             <div className="relative rounded-3xl border border-[#222222] bg-[#101010] p-10 md:p-16 text-center shadow-2xl overflow-hidden">
               <div className="relative z-10 mx-auto max-w-[620px] space-y-6">
                 <h2 className="text-[40px] sm:text-[56px] font-[900] tracking-[-0.03em] text-white leading-[1.04]">
-                  Issue like an icon<span className="text-[#0C6CF2]">.</span>
+                  Issue like an icon<span style={{ color: theme.primary }}>.</span>
                 </h2>
                 <div className="flex items-center justify-center gap-3 text-xs text-[#8F96A3]">
                   <span>Available on Web, iOS & Android</span>
@@ -734,7 +804,10 @@ export default function LandingPage() {
                 </div>
                 <div className="flex flex-col sm:flex-row justify-center gap-3 pt-3">
                   <Link href="/register">
-                    <button className="w-full sm:w-auto h-12 px-9 rounded-full bg-[#0C6CF2] hover:bg-[#0050D8] text-[15px] font-bold text-white shadow-xl shadow-[#0C6CF2]/30 transition hover:scale-105 active:scale-95">
+                    <button
+                      className="w-full sm:w-auto h-12 px-9 rounded-full text-[15px] font-bold text-white shadow-xl transition hover:scale-105 active:scale-95"
+                      style={{ backgroundColor: theme.primary }}
+                    >
                       Get started
                     </button>
                   </Link>
