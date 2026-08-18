@@ -1,21 +1,10 @@
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
 generator client {
   provider = "prisma-client-js"
-}
-
-enum CertificateStatus {
-  VALID
-  EXPIRED
-  REVOKED
-}
-
-enum TransactionAction {
-  ISSUE
-  REVOKE
 }
 
 model Organization {
@@ -43,7 +32,7 @@ model Certificate {
   issueDate        DateTime
   expiryDate       DateTime?
   certificateHash  String
-  status           CertificateStatus     @default(VALID)
+  status           String                @default("VALID")
   revokeReason     String?
   revokedAt        DateTime?
   pdfUrl           String?
@@ -66,7 +55,7 @@ model BlockchainTransaction {
   blockNumber     BigInt
   networkName     String            @default("sepolia")
   contractAddress String
-  action          TransactionAction
+  action          String
   gasUsed         String?
   timestamp       DateTime
   confirmed       Boolean           @default(false)

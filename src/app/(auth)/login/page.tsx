@@ -110,6 +110,7 @@ function LoginForm() {
               <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="org@example.com"
                 value={email}
@@ -132,6 +133,7 @@ function LoginForm() {
               <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
               <Input
                 id="password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}

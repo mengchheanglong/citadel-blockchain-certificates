@@ -295,15 +295,15 @@ export async function GET(request: Request) {
     };
 
     if (status && ['VALID', 'EXPIRED', 'REVOKED'].includes(status)) {
-      where.status = status as Prisma.EnumCertificateStatusFilter['equals'];
+      where.status = status;
     }
 
     if (search) {
       where.OR = [
-        { recipientName: { contains: search, mode: 'insensitive' } },
-        { recipientEmail: { contains: search, mode: 'insensitive' } },
-        { courseName: { contains: search, mode: 'insensitive' } },
-        { certificateId: { contains: search, mode: 'insensitive' } },
+        { recipientName: { contains: search } },
+        { recipientEmail: { contains: search } },
+        { courseName: { contains: search } },
+        { certificateId: { contains: search } },
       ];
     }
 

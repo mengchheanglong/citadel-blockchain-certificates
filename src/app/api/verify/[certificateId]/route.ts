@@ -53,10 +53,7 @@ export async function GET(request: Request, { params }: RouteContext) {
       // Fallback search with exact raw case or case-insensitive query
       certificate = await prisma.certificate.findFirst({
         where: {
-          certificateId: {
-            equals: rawCertId,
-            mode: 'insensitive',
-          },
+          certificateId: rawCertId,
         },
         include: {
           organization: {
