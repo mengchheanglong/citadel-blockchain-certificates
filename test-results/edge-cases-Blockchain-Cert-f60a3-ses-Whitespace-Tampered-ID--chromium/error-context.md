@@ -6,8 +6,8 @@
 
 # Test info
 
-- Name: edge-cases.spec.ts >> Blockchain Certificate Platform - UI Edge Cases >> 3. Issue Certificate Edge Cases (Long inputs, HTML tags, Missing optionals)
-- Location: e2e\edge-cases.spec.ts:68:7
+- Name: edge-cases.spec.ts >> Blockchain Certificate Platform - UI Edge Cases >> 5. Public Verification Edge Cases (Whitespace, Tampered ID)
+- Location: e2e\edge-cases.spec.ts:142:7
 
 # Error details
 
@@ -16,10 +16,11 @@ Test timeout of 30000ms exceeded.
 ```
 
 ```
-Error: page.fill: Test timeout of 30000ms exceeded.
-Call log:
-  - waiting for locator('input[name="email"]')
-
+Error: page.waitForURL: Test timeout of 30000ms exceeded.
+=========================== logs ===========================
+waiting for navigation to "**/verify/%20%20cert-2026-oy2li%20%20*" until "load"
+  navigated to "http://localhost:3000/verify/cert-2026-oy2li"
+============================================================
 ```
 
 # Page snapshot
@@ -29,89 +30,94 @@ Call log:
   - generic [ref=e2]:
     - banner [ref=e3]:
       - generic [ref=e4]:
-        - link "Back to Home" [ref=e5] [cursor=pointer]:
-          - /url: /
+        - link "Verify Another" [ref=e5] [cursor=pointer]:
+          - /url: /verify
         - link "BlockCert" [ref=e9] [cursor=pointer]:
           - /url: /
-    - main [ref=e14]:
-      - generic [ref=e16]:
-        - generic [ref=e17]:
-          - heading "Organization Sign In" [level=3] [ref=e21]
-          - paragraph [ref=e22]: Enter your organization credentials to manage and issue certificates
-        - generic [ref=e24]:
-          - generic [ref=e25]:
-            - text: Email Address
-            - textbox "Email Address" [ref=e30]:
-              - /placeholder: org@example.com
-          - generic [ref=e31]:
-            - generic [ref=e32]: Password
-            - textbox "Password" [ref=e38]:
-              - /placeholder: ••••••••
-          - button "Sign In" [ref=e39] [cursor=pointer]
-        - paragraph [ref=e43]:
-          - text: Don't have an organization account yet?
-          - link "Register your Organization" [ref=e44] [cursor=pointer]:
-            - /url: /register
-    - contentinfo [ref=e45]: © 2026 BlockCert Platform. Immutable blockchain credentialing.
+        - link [ref=e14] [cursor=pointer]:
+          - /url: /login
+          - button "Issuer Login" [ref=e15]
+    - main [ref=e16]:
+      - generic [ref=e18]:
+        - generic [ref=e25]:
+          - generic [ref=e26]:
+            - heading "Certificate is Valid" [level=1] [ref=e27]
+            - generic [ref=e28]: AUTHENTIC RECORD
+          - paragraph [ref=e29]: This credential is cryptographically anchored on the Ethereum blockchain and verified authentic.
+        - generic [ref=e30]:
+          - generic [ref=e32]:
+            - generic [ref=e34]:
+              - generic [ref=e35]:
+                - heading "Credential Details" [level=3] [ref=e36]
+                - paragraph [ref=e37]: Verified recipient and course information
+              - generic [ref=e38]:
+                - generic [ref=e39]: CERT-2026-OY2LI
+                - button "Copy ID" [ref=e40] [cursor=pointer]
+            - generic [ref=e44]:
+              - generic [ref=e49]:
+                - text: Recipient Name
+                - paragraph [ref=e50]: Jósé Máriá 👨‍💻 BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB
+              - generic [ref=e55]:
+                - text: Course / Credential
+                - paragraph [ref=e56]: Advanced Quantum Cryptography & Blockchain Architecture
+                - paragraph [ref=e57]: Testing <b>HTML</b> and <script> tags to ensure they are sanitized in PDF.
+              - generic [ref=e63]:
+                - text: Issuing Organization
+                - paragraph [ref=e64]: Org Edge Cases 1787037835499
+                - generic [ref=e65]: edgecases_1787037835499@test.com
+              - generic [ref=e70]:
+                - generic [ref=e74]:
+                  - text: Issue Date
+                  - paragraph [ref=e75]: August 18, 2026
+                - generic [ref=e80]:
+                  - text: Expiration Date
+                  - paragraph [ref=e81]: August 18, 2027
+          - generic [ref=e83]:
+            - generic [ref=e84]:
+              - heading "Blockchain Proof" [level=3] [ref=e90]
+              - paragraph [ref=e91]: Verified on Blockchain
+            - generic [ref=e92]:
+              - generic [ref=e93]:
+                - generic [ref=e94]: Verification Status
+                - text: Verified on Blockchain
+              - generic [ref=e95]:
+                - generic [ref=e96]:
+                  - generic [ref=e97]: Transaction Hash
+                  - button "Copy Hash" [ref=e98] [cursor=pointer]
+                - link "0xd38a89ea...73f05520" [ref=e103] [cursor=pointer]:
+                  - /url: https://etherscan.io/tx/0xd38a89ea0b818520cebcc868b23cfff002e3c2dfe394f05c5d65ab5373f05520
+              - generic [ref=e109]:
+                - text: Block Number
+                - paragraph [ref=e110]: "#2"
+              - generic [ref=e111]:
+                - text: Network
+                - paragraph [ref=e112]: hardhat
+              - generic [ref=e113]:
+                - generic [ref=e114]:
+                  - generic [ref=e115]: Contract Address
+                  - button "Copy Contract" [ref=e116] [cursor=pointer]
+                - paragraph [ref=e120]: "0x5FbDB2315678afecb367f032d93F642f64180aa3"
+        - generic [ref=e121]:
+          - generic [ref=e122]:
+            - heading "Need to verify another certificate?" [level=3] [ref=e123]
+            - paragraph [ref=e124]: You can search by ID or scan another QR code.
+          - generic [ref=e125]:
+            - link [ref=e126] [cursor=pointer]:
+              - /url: /verify
+              - button "Verify Another Certificate" [ref=e127]
+            - link [ref=e131] [cursor=pointer]:
+              - /url: /
+              - button "Back to Home" [ref=e132]
+    - contentinfo [ref=e133]:
+      - paragraph [ref=e134]: © 2026 BlockCert Platform. Immutable blockchain credential verification.
   - region "Notifications (F8)":
     - list
-  - alert [ref=e46]
+  - alert [ref=e135]
 ```
 
 # Test source
 
 ```ts
-  1   | import { test, expect } from '@playwright/test';
-  2   | 
-  3   | // Use a unique email for each run to avoid state collision
-  4   | const timestamp = Date.now();
-  5   | const testOrg = {
-  6   |   name: `Org Edge Cases ${timestamp}`,
-  7   |   email: `edgecases_${timestamp}@test.com`,
-  8   |   password: 'SecurePassword123!',
-  9   | };
-  10  | 
-  11  | let issuedCertId = '';
-  12  | 
-  13  | test.describe('Blockchain Certificate Platform - UI Edge Cases', () => {
-  14  | 
-  15  |   test('1. Registration Edge Cases (Passwords, XSS, Validation)', async ({ page }) => {
-  16  |     await page.goto('http://localhost:3000/register');
-  17  | 
-  18  |     // Test XSS in name
-  19  |     await page.fill('input[name="name"]', '<script>alert("XSS")</script> Name');
-  20  |     await page.fill('input[name="email"]', 'invalid-email');
-  21  |     await page.fill('input[name="password"]', 'short');
-  22  |     await page.fill('input[name="confirmPassword"]', 'mismatch');
-  23  |     
-  24  |     await page.click('button[type="submit"]');
-  25  | 
-  26  |     // Wait for validation errors or toasts (assuming HTML5 validation or Zod shows up)
-  27  |     // We expect it to NOT navigate away.
-  28  |     expect(page.url()).toContain('/register');
-  29  | 
-  30  |     // Now valid registration
-  31  |     await page.fill('input[name="name"]', testOrg.name);
-  32  |     await page.fill('input[name="email"]', testOrg.email);
-  33  |     await page.fill('input[name="password"]', testOrg.password);
-  34  |     await page.fill('input[name="confirmPassword"]', testOrg.password);
-  35  | 
-  36  |     // Click and wait for navigation to login or dashboard
-  37  |     await Promise.all([
-  38  |       page.waitForURL('**/login*'),
-  39  |       page.click('button[type="submit"]')
-  40  |     ]);
-  41  | 
-  42  |     expect(page.url()).toContain('/login');
-  43  |   });
-  44  | 
-  45  |   test('2. Login Edge Cases (Wrong credentials, SQLi attempt)', async ({ page }) => {
-  46  |     await page.goto('http://localhost:3000/login');
-  47  | 
-  48  |     // Attempt SQLi / NoSQLi in email
-  49  |     await page.fill('input[name="email"]', "' OR 1=1 --");
-  50  |     await page.fill('input[name="password"]', "password");
-  51  |     await page.click('button[type="submit"]');
   52  | 
   53  |     // Should stay on login
   54  |     expect(page.url()).toContain('/login');
@@ -131,8 +137,7 @@ Call log:
   68  |   test('3. Issue Certificate Edge Cases (Long inputs, HTML tags, Missing optionals)', async ({ page }) => {
   69  |     // Requires login first
   70  |     await page.goto('http://localhost:3000/login');
-> 71  |     await page.fill('input[name="email"]', testOrg.email);
-      |                ^ Error: page.fill: Test timeout of 30000ms exceeded.
+  71  |     await page.fill('input[name="email"]', testOrg.email);
   72  |     await page.fill('input[name="password"]', testOrg.password);
   73  |     await page.click('button[type="submit"]');
   74  |     await page.waitForURL('**/dashboard*');
@@ -213,7 +218,8 @@ Call log:
   149 |     await page.click('button:has-text("Verify")');
   150 | 
   151 |     // Wait for result page
-  152 |     await page.waitForURL(`**/verify/${encodeURIComponent(`  ${issuedCertId.toLowerCase()}  `)}*`);
+> 152 |     await page.waitForURL(`**/verify/${encodeURIComponent(`  ${issuedCertId.toLowerCase()}  `)}*`);
+      |                ^ Error: page.waitForURL: Test timeout of 30000ms exceeded.
   153 |     
   154 |     // Verify it resolved correctly despite the spaces and casing
   155 |     await page.waitForSelector('text=Valid');
