@@ -1,0 +1,76 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum CertificateStatus {
+  VALID
+  EXPIRED
+  REVOKED
+}
+
+enum TransactionAction {
+  ISSUE
+  REVOKE
+}
+
+model Organization {
+  id           String        @id @default(uuid())
+  name         String
+  email        String        @unique
+  passwordHash String
+  description  String?
+  logoUrl      String?
+  website      String?
+  certificates Certificate[]
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+}
+
+model Certificate {
+  id               String                @id @default(uuid())
+  certificateId    String                @unique
+  organizationId   String
+  organization     Organization          @relation(fields: [organizationId], references: [id])
+  recipientName    String
+  recipientEmail   String
+  courseName       String
+  courseDescription String?
+  issueDate        DateTime
+  expiryDate       DateTime?
+  certificateHash  String
+  status           CertificateStatus     @default(VALID)
+  revokeReason     String?
+  revokedAt        DateTime?
+  pdfUrl           String?
+  qrCodeData       String
+  emailSent        Boolean               @default(false)
+  transactions     BlockchainTransaction[]
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+
+  @@index([certificateId])
+  @@index([recipientEmail])
+  @@index([status])
+}
+
+model BlockchainTransaction {
+  id              String            @id @default(uuid())
+  certificateId   String
+  certificate     Certificate       @relation(fields: [certificateId], references: [id])
+  txHash          String
+  blockNumber     BigInt
+  networkName     String            @default("sepolia")
+  contractAddress String
+  action          TransactionAction
+  gasUsed         String?
+  timestamp       DateTime
+  confirmed       Boolean           @default(false)
+  createdAt       DateTime          @default(now())
+
+  @@index([txHash])
+}

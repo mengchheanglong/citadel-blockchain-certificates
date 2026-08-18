@@ -1,0 +1,45 @@
+import React from 'react';
+import Link from 'next/link';
+import { Shield, ArrowLeft } from 'lucide-react';
+
+export default function AuthLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  return (
+    <div className="flex min-h-screen flex-col bg-slate-50">
+      {/* Top Bar with Home Link */}
+      <header className="w-full border-b border-slate-200 bg-white px-4 py-4 sm:px-6">
+        <div className="container mx-auto flex max-w-6xl items-center justify-between">
+          <Link
+            href="/"
+            className="flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-blue-600"
+          >
+            <ArrowLeft className="h-4 w-4" />
+            <span>Back to Home</span>
+          </Link>
+
+          <Link href="/" className="flex items-center gap-2">
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-blue-600 text-white shadow-sm">
+              <Shield className="h-4 w-4" />
+            </div>
+            <span className="font-bold tracking-tight text-slate-900">
+              Block<span className="text-blue-600">Cert</span>
+            </span>
+          </Link>
+        </div>
+      </header>
+
+      {/* Main Centered Content */}
+      <main className="flex flex-1 items-center justify-center px-4 py-12 sm:px-6 lg:px-8">
+        <div className="w-full max-w-md">{children}</div>
+      </main>
+
+      {/* Footer */}
+      <footer className="py-4 text-center text-xs text-slate-500">
+        &copy; {new Date().getFullYear()} BlockCert Platform. Immutable blockchain credentialing.
+      </footer>
+    </div>
+  );
+}
