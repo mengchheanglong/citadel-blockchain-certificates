@@ -16,7 +16,7 @@ export default function LandingPage() {
               <Shield className="h-5 w-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              Block<span className="text-blue-600">Cert</span>
+              Citadel
             </span>
           </Link>
 
@@ -253,10 +253,10 @@ export default function LandingPage() {
             <div className="flex h-6 w-6 items-center justify-center rounded bg-blue-600 text-white">
               <Shield className="h-3.5 w-3.5" />
             </div>
-            <span className="font-semibold text-slate-900">BlockCert</span>
+            <span className="font-semibold text-slate-900">Citadel</span>
           </div>
           <p className="text-center text-sm">
-            &copy; {currentYear} BlockCert Platform. All rights reserved. Powered by Ethereum smart contracts.
+            &copy; {currentYear} Citadel. All rights reserved. Powered by Ethereum smart contracts.
           </p>
           <div className="flex gap-4 text-sm">
             <Link href="/verify" className="hover:text-blue-600 transition">

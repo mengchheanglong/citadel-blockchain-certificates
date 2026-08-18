@@ -25,7 +25,7 @@ export default function AuthLayout({
               <Shield className="h-4 w-4" />
             </div>
             <span className="font-bold tracking-tight text-slate-900">
-              Block<span className="text-blue-600">Cert</span>
+              Citadel
             </span>
           </Link>
         </div>
@@ -38,7 +38,7 @@ export default function AuthLayout({
 
       {/* Footer */}
       <footer className="py-4 text-center text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} BlockCert Platform. Immutable blockchain credentialing.
+        &copy; {new Date().getFullYear()} Citadel. Immutable blockchain credentialing.
       </footer>
     </div>
   );

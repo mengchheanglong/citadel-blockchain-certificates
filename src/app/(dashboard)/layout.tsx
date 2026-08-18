@@ -94,7 +94,7 @@ export default function DashboardLayout({
               <Shield className="h-5 w-5" />
             </div>
             <span className="text-xl font-bold tracking-tight text-slate-900">
-              Block<span className="text-blue-600">Cert</span>
+              Citadel
             </span>
           </Link>
           <Button

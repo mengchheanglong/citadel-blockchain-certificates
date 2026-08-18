@@ -6,9 +6,9 @@ import { Providers } from './providers';
 const inter = Inter({ subsets: ['latin'] });
 
 export const metadata: Metadata = {
-  title: 'BlockCert - Blockchain Digital Certificate Platform',
+  title: 'Citadel - Immutable Blockchain Certificate Platform',
   description:
-    'Issue and verify tamper-proof digital certificates anchored on the Ethereum blockchain.',
+    'Issue and verify tamper-proof academic and professional certificates anchored on the Ethereum blockchain.',
 };
 
 export default function RootLayout({

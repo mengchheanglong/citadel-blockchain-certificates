@@ -118,7 +118,7 @@ export default function VerifyEntryPage() {
               <Shield className="h-4 w-4" />
             </div>
             <span className="font-bold tracking-tight text-slate-900">
-              Block<span className="text-blue-600">Cert</span>
+              Citadel
             </span>
           </Link>
 
@@ -276,9 +276,9 @@ export default function VerifyEntryPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-        <p>
-          &copy; {new Date().getFullYear()} BlockCert Platform. Powered by Ethereum smart contracts.
-        </p>
+          <p>
+            &copy; {new Date().getFullYear()} Citadel. Powered by Ethereum smart contracts.
+          </p>
       </footer>
     </div>
   );

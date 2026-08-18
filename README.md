@@ -1,4 +1,4 @@
-# BlockCert - Blockchain Digital Certificate Platform
+# Citadel - Immutable Blockchain Digital Certificate Platform
 
 A web-based Digital Certificate Issuing Platform that uses blockchain technology to provide secure, tamper-resistant, and publicly verifiable certificates.
 

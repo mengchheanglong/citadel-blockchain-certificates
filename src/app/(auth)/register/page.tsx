@@ -132,7 +132,7 @@ export default function RegisterPage() {
         setSuccessMessage('Registration successful! Redirecting to dashboard...');
         toast({
           title: 'Account Created',
-          description: 'Welcome to BlockCert! Redirecting...',
+          description: 'Welcome to Citadel! Redirecting...',
         });
         setTimeout(() => {
           router.push('/dashboard');
