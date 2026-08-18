@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Search,
@@ -27,16 +28,31 @@ import {
   ExternalLink,
   BookOpen,
   Award,
+  Star,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CitadelLogo } from '@/components/ui/citadel-logo';
+
+/* =========================================================================
+   100% EXACT BLOCKCHAIN.COM (2026) DESIGN REPLICA FOR CITADEL
+   Colors:
+   - Primary Background: #000000 (Pure Black)
+   - Secondary Surfaces: #101010, #12151E, #181818
+   - Borders: #222222, #1F2430
+   - Accent Primary: #0C6CF2 (Blockchain Electric Cobalt Blue)
+   - Accent Secondary: #1032CF (Deep Royal Blue)
+   - Accent Cyan: #00C2FF
+   - Success Green: #00D26A / #10B981
+   - Text: #FFFFFF, #8F96A3, #555555
+   - Fonts: Inter (tight -0.04em tracking, massive grotesque bold scale)
+   ========================================================================= */
 
 export default function LandingPage() {
   const router = useRouter();
   const [certInput, setCertInput] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
-  const [activeTab, setActiveTab] = useState<'cert' | 'tx' | 'contract'>('cert');
+  const [activeTab, setActiveTab] = useState<'cert' | 'contract'>('cert');
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -51,78 +67,75 @@ export default function LandingPage() {
     router.push(`/verify/${encodeURIComponent(certInput.trim())}`);
   };
 
-  // Ticker marquee items
-  const marqueeItems = [
-    { name: 'Ethereum', tag: 'EVM Mainnet', color: '#627EEA' },
-    { name: 'Sepolia', tag: 'Testnet Protocol', color: '#00C2FF' },
-    { name: 'SHA-256', tag: 'Cryptographic Hash', color: '#6916F5' },
-    { name: 'OpenZeppelin', tag: 'Audited Contracts', color: '#4E5EE4' },
-    { name: 'Solidity 0.8.20', tag: 'Smart Contracts', color: '#363636' },
-    { name: 'Supabase', tag: 'PostgreSQL Cache', color: '#3ECF8E' },
-    { name: 'Ethers.js v6', tag: 'Web3 Client', color: '#2535A0' },
-    { name: 'Next.js 14', tag: 'App Router', color: '#FFFFFF' },
-    { name: 'Hardhat', tag: 'Local Node', color: '#FFF100' },
+  // Real tokens copied from Blockchain.com assets
+  const tokenMarquee = [
+    { name: 'Ethereum', symbol: 'ETH', price: '$2,648.10', change: '+2.41%', svg: '/blockchain/prices-eth.svg', isUp: true },
+    { name: 'Bitcoin', symbol: 'BTC', price: '$64,120.00', change: '+1.85%', svg: '/blockchain/prices-btc.svg', isUp: true },
+    { name: 'Solana', symbol: 'SOL', price: '$148.90', change: '+4.12%', svg: '/blockchain/prices-sol.svg', isUp: true },
+    { name: 'Aave', symbol: 'AAVE', price: '$112.40', change: '+3.05%', svg: '/blockchain/prices-aave.svg', isUp: true },
+    { name: 'Dogecoin', symbol: 'DOGE', price: '$0.104', change: '-0.42%', svg: '/blockchain/prices-doge.svg', isUp: false },
+    { name: 'Polkadot', symbol: 'DOT', price: '$4.28', change: '+1.15%', svg: '/blockchain/prices-dot.svg', isUp: true },
+    { name: 'Stellar', symbol: 'XLM', price: '$0.098', change: '+0.88%', svg: '/blockchain/prices-xlm.svg', isUp: true },
   ];
 
   return (
-    <div className="flex min-h-screen flex-col bg-[#07090E] text-white selection:bg-[#6916F5] selection:text-white antialiased overflow-x-hidden font-sans">
+    <div className="flex min-h-screen flex-col bg-[#000000] text-white selection:bg-[#0C6CF2] selection:text-white antialiased overflow-x-hidden font-sans">
       {/* ========================================================================= */}
-      {/* AMBIENT LIGHTING GLOWS                                                    */}
+      {/* AMBIENT BACKGROUND GLOW                                                   */}
       {/* ========================================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-48 left-[15%] w-[800px] h-[800px] rounded-full bg-[#6916F5]/12 blur-[190px] animate-glow-pulse" />
-        <div className="absolute top-[35%] -right-48 w-[650px] h-[650px] rounded-full bg-[#00C2FF]/8 blur-[180px] animate-glow-pulse [animation-delay:3.5s]" />
-        <div className="absolute -bottom-48 left-[5%] w-[750px] h-[750px] rounded-full bg-[#6916F5]/8 blur-[200px]" />
+        <div className="absolute -top-48 left-[25%] w-[800px] h-[800px] rounded-full bg-[#0C6CF2]/10 blur-[190px] animate-glow-pulse" />
+        <div className="absolute top-[40%] -right-48 w-[600px] h-[600px] rounded-full bg-[#1032CF]/8 blur-[180px] animate-glow-pulse [animation-delay:3.5s]" />
       </div>
 
       {/* ========================================================================= */}
-      {/* STICKY HEADER (Matches Blockchain.com Top Bar)                           */}
+      {/* TOP NAVIGATION BAR (Exact Blockchain.com Navbar)                          */}
       {/* ========================================================================= */}
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-300 ${
           scrolled
-            ? 'bg-[#07090E]/90 backdrop-blur-2xl border-b border-[#1E2330] shadow-lg shadow-black/40'
+            ? 'bg-[#000000]/95 backdrop-blur-2xl border-b border-[#222222]'
             : 'bg-transparent border-b border-transparent'
         }`}
       >
-        <div className="container mx-auto flex h-20 max-w-[1240px] items-center justify-between px-6 sm:px-8">
-          {/* Brand */}
-          <Link href="/" className="flex items-center gap-3 transition-opacity hover:opacity-90">
+        <div className="container mx-auto flex h-20 max-w-[1280px] items-center justify-between px-6 sm:px-8">
+          {/* Logo */}
+          <Link href="/" className="flex items-center gap-3 transition hover:opacity-90">
             <CitadelLogo className="h-10 w-10" />
-            <span className="text-[22px] font-[900] tracking-[-0.03em] text-white">
+            <span className="text-[24px] font-[900] tracking-[-0.03em] text-white">
               Citadel
             </span>
           </Link>
 
-          {/* Desktop Nav */}
-          <nav className="hidden lg:flex items-center gap-8 text-[14px] font-medium text-[#8F96A3]">
-            <Link href="#features" className="transition-colors hover:text-white">Features</Link>
-            <Link href="#explorer-section" className="transition-colors hover:text-white">Explorer</Link>
-            <Link href="#institutional" className="transition-colors hover:text-white">Institutions</Link>
-            <Link href="#how-it-works" className="transition-colors hover:text-white">How It Works</Link>
-            <Link href="/verify" className="flex items-center gap-1.5 text-[#00C2FF] transition-colors hover:text-white font-semibold">
-              <Activity className="h-3.5 w-3.5" />
-              Live Verify
+          {/* Desktop Nav Items */}
+          <nav className="hidden lg:flex items-center gap-8 text-[15px] font-semibold text-[#8F96A3]">
+            <Link href="#features" className="transition hover:text-white">Products</Link>
+            <Link href="#explorer-section" className="transition hover:text-white">Explorer</Link>
+            <Link href="#institutional" className="transition hover:text-white">Institutional</Link>
+            <Link href="#how-it-works" className="transition hover:text-white">How It Works</Link>
+            <Link href="/verify" className="flex items-center gap-1.5 text-[#0C6CF2] hover:text-[#00C2FF] transition font-bold">
+              <Activity className="h-4 w-4" />
+              Verify
             </Link>
           </nav>
 
-          {/* Right CTA Group */}
+          {/* Action Buttons */}
           <div className="hidden lg:flex items-center gap-3">
             <Link href="/login">
-              <button className="h-10 px-5 rounded-full text-[14px] font-semibold text-[#8F96A3] transition-all hover:text-white hover:bg-[#131822]">
+              <button className="h-10 px-5 rounded-full text-[14px] font-bold text-[#8F96A3] transition hover:text-white hover:bg-[#181818]">
                 Log In
               </button>
             </Link>
             <Link href="/register">
-              <button className="h-10 px-6 rounded-full bg-[#6916F5] hover:bg-[#7C3AED] text-[14px] font-bold text-white transition-all shadow-[0_0_24px_rgba(105,22,245,0.35)] hover:scale-105 active:scale-95">
+              <button className="h-10 px-6 rounded-full bg-[#0C6CF2] hover:bg-[#0050D8] text-[14px] font-bold text-white transition shadow-[0_0_24px_rgba(12,108,242,0.35)] hover:scale-105 active:scale-95">
                 Sign Up
               </button>
             </Link>
           </div>
 
-          {/* Mobile menu toggle */}
+          {/* Mobile Menu */}
           <button
-            className="lg:hidden p-2 rounded-lg text-[#8F96A3] hover:text-white transition"
+            className="lg:hidden p-2 text-[#8F96A3] hover:text-white transition"
             onClick={() => setMobileNav(!mobileNav)}
           >
             {mobileNav ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
@@ -131,19 +144,19 @@ export default function LandingPage() {
 
         {/* Mobile Drawer */}
         {mobileNav && (
-          <div className="lg:hidden border-t border-[#1E2330] bg-[#07090E]/98 px-6 pb-6 pt-4 space-y-4 animate-fade-in-up">
-            <Link href="#features" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Features</Link>
+          <div className="lg:hidden border-t border-[#222222] bg-[#000000]/98 px-6 pb-6 pt-4 space-y-4 animate-fade-in-up">
+            <Link href="#features" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Products</Link>
             <Link href="#explorer-section" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Explorer</Link>
-            <Link href="#institutional" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Institutions</Link>
-            <Link href="/verify" className="block text-[15px] text-[#00C2FF] hover:text-white py-2" onClick={() => setMobileNav(false)}>Live Explorer</Link>
+            <Link href="#institutional" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Institutional</Link>
+            <Link href="/verify" className="block text-[15px] text-[#0C6CF2] hover:text-white py-2" onClick={() => setMobileNav(false)}>Verify</Link>
             <div className="pt-2 flex gap-3">
               <Link href="/login" className="flex-1">
-                <button className="w-full h-11 rounded-full border border-[#1E2330] text-[14px] font-semibold text-[#8F96A3] hover:text-white">
+                <button className="w-full h-11 rounded-full border border-[#222222] text-[14px] font-bold text-[#8F96A3] hover:text-white">
                   Log In
                 </button>
               </Link>
               <Link href="/register" className="flex-1">
-                <button className="w-full h-11 rounded-full bg-[#6916F5] text-[14px] font-bold text-white shadow-lg">
+                <button className="w-full h-11 rounded-full bg-[#0C6CF2] text-[14px] font-bold text-white">
                   Sign Up
                 </button>
               </Link>
@@ -154,89 +167,82 @@ export default function LandingPage() {
 
       <main className="relative z-10 flex-1">
         {/* ========================================================================= */}
-        {/* SECTION 1: HERO SECTION ("Be Your Own Certificate Authority")             */}
+        {/* SECTION 1: HERO ("Be Your Own Certificate Authority")                     */}
         {/* ========================================================================= */}
-        <section className="relative pt-16 pb-20 md:pt-24 md:pb-28">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+        <section className="relative pt-16 pb-20 md:pt-24 md:pb-32">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="grid gap-14 lg:grid-cols-12 items-center">
               
               {/* Left Column */}
               <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
-                {/* Pill Badge */}
-                <div className="inline-flex items-center gap-2.5 rounded-full border border-[#6916F5]/30 bg-[#6916F5]/10 px-4 py-1.5 text-xs font-semibold text-[#B89DFF] tracking-wide">
-                  <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C2FF] opacity-75" />
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C2FF]" />
-                  </span>
-                  <span>The Global Infrastructure Platform for Credentials</span>
-                </div>
-
-                {/* Massive Hero Title */}
-                <h1 className="text-[44px] sm:text-[64px] lg:text-[72px] font-[900] leading-[1.04] tracking-[-0.04em] text-white">
+                {/* Headline */}
+                <h1 className="text-[48px] sm:text-[68px] lg:text-[80px] font-[900] leading-[1.0] tracking-[-0.04em] text-white">
                   Be Your Own <br />
-                  <span className="bg-gradient-to-r from-[#6916F5] via-[#00C2FF] to-[#A855F7] bg-clip-text text-transparent">
-                    Certificate Authority
-                  </span>
-                  <span className="text-[#6916F5]">.</span>
+                  <span className="text-[#0C6CF2]">Certificate Authority</span>
+                  <span className="text-white">.</span>
                 </h1>
 
                 {/* Subtitle */}
-                <p className="max-w-[560px] text-[17px] sm:text-[19px] leading-[1.65] text-[#8F96A3] font-normal mx-auto lg:mx-0">
-                  Issuing platform and on-chain Certificate Registry, all in one application. Issue, anchor, and verify tamper-proof academic degrees with mathematical certainty.
+                <p className="max-w-[560px] text-[18px] sm:text-[20px] leading-[1.6] text-[#8F96A3] font-normal mx-auto lg:mx-0">
+                  Issuing platform and on-chain credential registry, all in one application.
                 </p>
 
-                {/* Instant Verification Search Bar */}
+                {/* 4 Hero Feature Bullets (Exact from Blockchain.com Section 1) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-w-[560px] mx-auto lg:mx-0 text-left text-xs font-semibold text-slate-300">
+                  <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
+                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <span>Seamless issuance & verification</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
+                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <span>0% Counterfeit blockchain guarantee</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
+                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <span>Dynamic PDF & high-res QR engine</span>
+                  </div>
+                  <div className="flex items-center gap-2 rounded-xl bg-[#121212] border border-[#222222] p-3">
+                    <CheckCircle2 className="h-4 w-4 text-[#0C6CF2] shrink-0" />
+                    <span>Automated recipient email dispatch</span>
+                  </div>
+                </div>
+
+                {/* Search Bar Input */}
                 <form
                   onSubmit={handleHeroSearch}
-                  className="max-w-[580px] mx-auto lg:mx-0 flex flex-col sm:flex-row gap-2 rounded-2xl sm:rounded-full border border-[#1E2330] bg-[#0E121B] p-2 shadow-2xl transition-all focus-within:border-[#6916F5]/60 focus-within:shadow-[0_0_30px_rgba(105,22,245,0.25)]"
+                  className="max-w-[580px] mx-auto lg:mx-0 flex flex-col sm:flex-row gap-2 rounded-2xl sm:rounded-full border border-[#222222] bg-[#101010] p-2 shadow-2xl transition focus-within:border-[#0C6CF2]"
                 >
                   <div className="relative flex-1">
-                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5A6072]" />
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#555555]" />
                     <input
                       type="text"
                       placeholder="Enter Certificate ID or Tx Hash"
                       value={certInput}
                       onChange={(e) => setCertInput(e.target.value)}
-                      className="w-full bg-transparent pl-11 pr-4 py-3.5 text-[14px] text-white placeholder:text-[#5A6072] focus:outline-none font-mono"
+                      className="w-full bg-transparent pl-11 pr-4 py-3.5 text-[14px] text-white placeholder:text-[#555555] focus:outline-none font-mono"
                     />
                   </div>
                   <button
                     type="submit"
-                    className="flex items-center justify-center gap-2 bg-[#6916F5] hover:bg-[#7C3AED] text-white text-[14px] font-bold py-3.5 px-7 rounded-xl sm:rounded-full shrink-0 shadow-[0_0_20px_rgba(105,22,245,0.3)] transition-all hover:scale-105 active:scale-95"
+                    className="flex items-center justify-center gap-2 bg-[#0C6CF2] hover:bg-[#0050D8] text-white text-[14px] font-bold py-3.5 px-7 rounded-xl sm:rounded-full shrink-0 shadow-lg shadow-[#0C6CF2]/30 transition hover:scale-105 active:scale-95"
                   >
-                    Verify
+                    Verify Credential
                     <ArrowRight className="h-4 w-4" />
                   </button>
                 </form>
-
-                {/* Trust Badges */}
-                <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-[12px] text-[#5A6072] font-semibold pt-1">
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
-                    Zero Counterfeit Guarantee
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
-                    Ethereum Sepolia Network
-                  </span>
-                  <span className="flex items-center gap-1.5">
-                    <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
-                    OpenZeppelin Security
-                  </span>
-                </div>
               </div>
 
               {/* Right Column: Live Terminal Visualizer Card */}
               <div className="lg:col-span-5 relative">
-                <div className="relative rounded-3xl border border-[#1E2330] bg-gradient-to-b from-[#0E121B] to-[#07090E] p-7 shadow-2xl animate-float">
-                  {/* Terminal Header */}
-                  <div className="flex items-center justify-between border-b border-[#1E2330] pb-4 mb-5">
+                <div className="relative rounded-3xl border border-[#222222] bg-[#101010] p-7 shadow-2xl animate-float">
+                  {/* Header */}
+                  <div className="flex items-center justify-between border-b border-[#222222] pb-4 mb-5">
                     <div className="flex items-center gap-2">
                       <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
                       <div className="h-2.5 w-2.5 rounded-full bg-[#FFBD2E]" />
                       <div className="h-2.5 w-2.5 rounded-full bg-[#28CA41]" />
-                      <span className="ml-3 text-[11px] font-mono text-[#5A6072]">
-                        CertificateRegistry.verify()
+                      <span className="ml-3 text-[11px] font-mono text-[#666666]">
+                        CertificateRegistry.sol
                       </span>
                     </div>
                     <span className="inline-flex items-center gap-1.5 rounded-full bg-[#00D26A]/10 px-3 py-0.5 text-[10px] font-extrabold text-[#00D26A] border border-[#00D26A]/20 uppercase tracking-wider">
@@ -245,52 +251,52 @@ export default function LandingPage() {
                     </span>
                   </div>
 
-                  {/* Blockchain Technical Readout */}
+                  {/* Blockchain Readout */}
                   <div className="space-y-3.5 text-[12px] font-mono">
-                    <div className="rounded-xl bg-[#07090E] p-3.5 border border-[#1E2330]">
-                      <span className="text-[10px] text-[#5A6072] uppercase tracking-widest">Certificate ID</span>
-                      <p className="font-bold text-[#00C2FF] mt-1 text-[14px]">CERT-2026-OXF942K</p>
+                    <div className="rounded-xl bg-[#000000] p-3.5 border border-[#222222]">
+                      <span className="text-[10px] text-[#555555] uppercase tracking-widest">Certificate ID</span>
+                      <p className="font-bold text-[#0C6CF2] mt-1 text-[14px]">CERT-2026-OXF942K</p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
-                      <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Recipient</span>
+                      <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
+                        <span className="text-[10px] text-[#555555]">Recipient</span>
                         <p className="text-white font-semibold truncate mt-0.5 text-[12px]">Dr. Alex Rivera</p>
                       </div>
-                      <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Degree / Program</span>
+                      <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
+                        <span className="text-[10px] text-[#555555]">Degree</span>
                         <p className="text-white font-semibold truncate mt-0.5 text-[12px]">Quantum AI</p>
                       </div>
                     </div>
 
-                    <div className="rounded-xl bg-[#07090E] p-3.5 border border-[#1E2330]">
-                      <span className="text-[10px] text-[#5A6072] uppercase tracking-widest">SHA-256 Hash</span>
+                    <div className="rounded-xl bg-[#000000] p-3.5 border border-[#222222]">
+                      <span className="text-[10px] text-[#555555] uppercase tracking-widest">SHA-256 Hash</span>
                       <p className="text-[#8F96A3] break-all text-[11px] mt-1">
                         0x8f3c7a91b4e2d67a18f09cb87321a4159cf05...
                       </p>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-[11px]">
-                      <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Active Network</span>
-                        <p className="text-[#B89DFF] font-semibold mt-0.5 text-[12px]">Sepolia EVM</p>
+                      <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
+                        <span className="text-[10px] text-[#555555]">Network</span>
+                        <p className="text-[#0C6CF2] font-semibold mt-0.5 text-[12px]">Sepolia EVM</p>
                       </div>
-                      <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Status</span>
+                      <div className="rounded-xl bg-[#000000] p-3 border border-[#222222]">
+                        <span className="text-[10px] text-[#555555]">Status</span>
                         <p className="text-[#00D26A] font-semibold mt-0.5 text-[12px]">ACTIVE & VALID</p>
                       </div>
                     </div>
                   </div>
 
-                  {/* QR Action Footer */}
-                  <div className="mt-5 pt-4 border-t border-[#1E2330] flex items-center justify-between text-[12px]">
-                    <div className="flex items-center gap-2 text-[#5A6072]">
-                      <QrCode className="h-4 w-4 text-[#6916F5]" />
-                      <span>Instant Camera Scanner</span>
+                  {/* Footer */}
+                  <div className="mt-5 pt-4 border-t border-[#222222] flex items-center justify-between text-[12px]">
+                    <div className="flex items-center gap-2 text-[#555555]">
+                      <QrCode className="h-4 w-4 text-[#0C6CF2]" />
+                      <span>Instant QR Scanner</span>
                     </div>
                     <Link
                       href="/verify"
-                      className="text-[#6916F5] hover:text-[#B89DFF] font-bold inline-flex items-center gap-1 transition"
+                      className="text-[#0C6CF2] hover:text-[#00C2FF] font-bold inline-flex items-center gap-1 transition"
                     >
                       Open Live Explorer
                       <ArrowUpRight className="h-3.5 w-3.5" />
@@ -304,61 +310,75 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 2: PROTOCOL & ASSET MARQUEE (Matches Blockchain.com Asset Ticker)  */}
+        {/* SECTION 2: LIVE ASSET TICKER MARQUEE (With Real Blockchain.com SVGs)      */}
         {/* ========================================================================= */}
-        <section className="border-y border-[#1E2330] bg-[#0A0D14]/90 py-6 overflow-hidden">
+        <section className="border-y border-[#222222] bg-[#0A0A0A] py-6 overflow-hidden">
           <div className="flex animate-marquee gap-8 items-center">
-            {[...marqueeItems, ...marqueeItems].map((item, idx) => (
+            {[...tokenMarquee, ...tokenMarquee].map((item, idx) => (
               <div
                 key={idx}
-                className="flex items-center gap-3 rounded-full border border-[#1E2330] bg-[#0E121B] px-5 py-2.5 shrink-0"
+                className="flex items-center gap-3.5 rounded-full border border-[#222222] bg-[#121212] px-5 py-2.5 shrink-0"
               >
-                <div
-                  className="h-2.5 w-2.5 rounded-full"
-                  style={{ backgroundColor: item.color }}
-                />
-                <span className="text-sm font-bold text-white">{item.name}</span>
-                <span className="text-xs text-[#5A6072] font-mono">{item.tag}</span>
+                <div className="relative h-6 w-6 shrink-0">
+                  <Image src={item.svg} alt={item.name} width={24} height={24} className="h-6 w-6" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-bold text-white">{item.name}</span>
+                  <span className="text-xs text-[#666666] font-mono">{item.symbol}</span>
+                </div>
+                <span className="text-xs font-mono font-bold text-slate-200">{item.price}</span>
+                <span className={`text-[11px] font-bold font-mono ${item.isUp ? 'text-[#00D26A]' : 'text-rose-500'}`}>
+                  {item.change}
+                </span>
               </div>
             ))}
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 3: PRODUCT SUITE ("The world's most trusted credential platform") */}
+        {/* SECTION 3: FEATURE SHOWCASE ("One of the world's most loved apps")         */}
         {/* ========================================================================= */}
         <section id="features" className="py-24 lg:py-32 relative">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-            <div className="text-center max-w-[680px] mx-auto mb-16 lg:mb-20 space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#6916F5]/25 bg-[#6916F5]/10 px-4 py-1 text-[11px] font-semibold text-[#B89DFF] uppercase tracking-widest">
-                <Sparkles className="h-3.5 w-3.5" />
-                Enterprise Issuing Suite
-              </div>
-              <h2 className="text-[34px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
-                The world&apos;s most trusted credential platform.
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
+            <div className="text-center max-w-[720px] mx-auto mb-16 lg:mb-20 space-y-4">
+              <h2 className="text-[36px] sm:text-[52px] font-[900] tracking-[-0.03em] text-white leading-[1.06]">
+                One of the world&apos;s most trusted credential platforms.
               </h2>
-              <p className="text-[#8F96A3] text-[17px] leading-relaxed">
-                Our powerful issuing suite and integrated Ethereum smart contract registry give you complete authority over tamper-proof credentials.
+              <p className="text-[#8F96A3] text-[18px] leading-relaxed">
+                Our powerful issuing platform and integrated Ethereum smart contract registry give you complete access to the future of verifiable trust.
               </p>
+              <div className="flex flex-wrap items-center justify-center gap-6 pt-2 text-xs font-semibold text-[#8F96A3]">
+                <div className="flex items-center gap-1.5">
+                  <div className="flex text-amber-400">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="h-4 w-4 fill-current" />
+                    ))}
+                  </div>
+                  <span className="text-white font-bold">4.8 ★</span> on App Store (178K reviews)
+                </div>
+                <div>
+                  <span className="text-white font-bold">100,000+</span> degrees anchored on Ethereum
+                </div>
+              </div>
             </div>
 
             {/* Bento Grid */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {/* Feature 1: Large Span */}
-              <div className="md:col-span-2 group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
+              <div className="md:col-span-2 group rounded-3xl border border-[#222222] bg-[#101010] p-8 sm:p-10 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                 <div className="space-y-4">
-                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6916F5]/15 text-[#B89DFF] border border-[#6916F5]/30">
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#0C6CF2]/15 text-[#0C6CF2] border border-[#0C6CF2]/30">
                     <Lock className="h-6 w-6" />
                   </div>
-                  <h3 className="text-[26px] sm:text-[30px] font-[900] text-white tracking-[-0.02em]">
+                  <h3 className="text-[26px] sm:text-[32px] font-[900] text-white tracking-[-0.02em]">
                     Immutable Smart Contract Registry
                   </h3>
-                  <p className="text-[#8F96A3] text-[15px] leading-[1.75] max-w-xl">
+                  <p className="text-[#8F96A3] text-[16px] leading-[1.75] max-w-xl">
                     Every certificate hash is anchored to the Ethereum blockchain via `CertificateRegistry.sol`. OpenZeppelin cryptographic permissioning ensures that only verified institutions can mint, anchor, or revoke credentials.
                   </p>
                 </div>
-                <div className="mt-8 pt-5 border-t border-[#1E2330] flex flex-wrap items-center gap-4 text-[12px] font-mono text-[#5A6072]">
-                  <span className="text-[#B89DFF]">Solidity 0.8.20</span>
+                <div className="mt-8 pt-5 border-t border-[#222222] flex flex-wrap items-center gap-4 text-[12px] font-mono text-[#666666]">
+                  <span className="text-[#0C6CF2]">Solidity 0.8.20</span>
                   <span>•</span>
                   <span>EVM Bytecode Verified</span>
                   <span>•</span>
@@ -367,7 +387,7 @@ export default function LandingPage() {
               </div>
 
               {/* Feature 2: High Bento */}
-              <div className="group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
+              <div className="group rounded-3xl border border-[#222222] bg-[#101010] p-8 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                 <div className="space-y-4">
                   <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00C2FF]/15 text-[#00C2FF] border border-[#00C2FF]/30">
                     <QrCode className="h-6 w-6" />
@@ -379,7 +399,7 @@ export default function LandingPage() {
                     Embedded high-res QR codes allow employers and recruiters to point any smartphone camera at a paper or digital diploma to verify on-chain authenticity in real-time.
                   </p>
                 </div>
-                <Link href="/verify" className="mt-6 text-[13px] font-bold text-[#6916F5] hover:text-[#B89DFF] inline-flex items-center gap-1.5 transition">
+                <Link href="/verify" className="mt-6 text-[13px] font-bold text-[#0C6CF2] hover:text-[#00C2FF] inline-flex items-center gap-1.5 transition">
                   Launch Scanner Portal
                   <ArrowUpRight className="h-3.5 w-3.5" />
                 </Link>
@@ -391,9 +411,9 @@ export default function LandingPage() {
                 { icon: Zap, title: 'Supabase PostgreSQL', desc: 'Encrypted metadata cached with transaction poolers delivering sub-second queries, instant search, and zero cold starts.' },
                 { icon: Fingerprint, title: 'On-Chain Revocation', desc: 'Granular revocation authority allowing institutions to invalidate credentials with reason codes recorded permanently.' },
               ].map((f, i) => (
-                <div key={i} className="group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-7 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
+                <div key={i} className="group rounded-3xl border border-[#222222] bg-[#101010] p-7 flex flex-col justify-between transition hover:border-[#0C6CF2]/60 hover:shadow-[0_0_40px_rgba(12,108,242,0.15)]">
                   <div className="space-y-3.5">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#6916F5]/10 text-[#B89DFF] border border-[#6916F5]/20">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-[#0C6CF2]/10 text-[#0C6CF2] border border-[#0C6CF2]/20">
                       <f.icon className="h-5 w-5" />
                     </div>
                     <h3 className="text-[18px] font-bold text-white">{f.title}</h3>
@@ -406,32 +426,32 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 4: TRUST & MILESTONE CARDS ("Cryptoing since genesis")            */}
+        {/* SECTION 4: TRUST & MILESTONE CARDS ("Cryptoing since 2011")               */}
         {/* ========================================================================= */}
-        <section className="py-20 border-t border-[#1E2330] bg-[#0A0D14]/80">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+        <section className="py-20 border-t border-[#222222] bg-[#0A0A0A]">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#B89DFF]">Origin</span>
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#0C6CF2]">Consensus</span>
                 <p className="text-3xl font-[900] text-white">Built on Ethereum</p>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
-                  Decentralized cryptographic proofs anchored directly to Ethereum ledger blocks without reliance on any proprietary server.
+                  Cryptographic proofs anchored directly to Ethereum ledger blocks without reliance on proprietary servers.
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
-                <span className="text-xs font-bold uppercase tracking-widest text-[#00D26A]">Integrity</span>
-                <p className="text-3xl font-[900] text-white">Security First</p>
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#00D26A]">Security First</span>
+                <p className="text-3xl font-[900] text-white">0% Counterfeit Funds</p>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
-                  0% counterfeit rate. Deterministic SHA-256 signatures ensure certificates cannot be modified once mined.
+                  We&apos;ve never had a forged credential. SHA-256 signatures ensure certificates cannot be altered once mined.
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
                 <span className="text-xs font-bold uppercase tracking-widest text-[#00C2FF]">Scale</span>
-                <p className="text-3xl font-[900] text-white">Institutional Scale</p>
+                <p className="text-3xl font-[900] text-white">Used by Millions</p>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
-                  Designed for high-throughput batch credential minting, instant PDF generation, and automated recipient notifications.
+                  Over 95,000+ verified credentials issued and verified worldwide with 100% on-chain uptime.
                 </p>
               </div>
             </div>
@@ -439,28 +459,28 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 5 & 6: INTERACTIVE BLOCKCHAIN EXPLORER SANDBOX                   */}
+        {/* SECTION 5 & 6: BLOCKCHAIN EXPLORER SANDBOX                                */}
         {/* ========================================================================= */}
-        <section id="explorer-section" className="py-24 border-t border-[#1E2330] bg-[#07090E]">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+        <section id="explorer-section" className="py-24 border-t border-[#222222] bg-[#000000]">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="grid gap-12 lg:grid-cols-12 items-center">
               
-              {/* Left text */}
+              {/* Left copy */}
               <div className="lg:col-span-5 space-y-6">
-                <div className="inline-flex items-center gap-2 rounded-full border border-[#00C2FF]/30 bg-[#00C2FF]/10 px-4 py-1 text-xs font-semibold text-[#00C2FF]">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#0C6CF2]/30 bg-[#0C6CF2]/10 px-4 py-1 text-xs font-semibold text-[#0C6CF2]">
                   <Activity className="h-3.5 w-3.5" />
                   Public Ledger Explorer
                 </div>
-                <h2 className="text-[34px] sm:text-[44px] font-[900] tracking-[-0.03em] text-white leading-[1.1]">
-                  Pioneering public credential verification.
+                <h2 className="text-[36px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
+                  Way back when, we pioneered the world&apos;s first explorer.
                 </h2>
                 <p className="text-[#8F96A3] text-[16px] leading-relaxed">
-                  Search, inspect, and verify the cryptographic state of any degree, issuer authority, or transaction hash in real-time.
+                  Now, use it to search, inspect, and verify the cryptographic state of any degree, issuer authority, or transaction hash in real-time.
                 </p>
                 <div className="pt-2">
                   <Link href="/verify">
-                    <Button className="bg-[#6916F5] hover:bg-[#7C3AED] text-white font-bold rounded-full px-6 shadow-lg shadow-[#6916F5]/30">
-                      Launch Full Explorer Portal &rarr;
+                    <Button className="bg-[#0C6CF2] hover:bg-[#0050D8] text-white font-bold rounded-full px-7 shadow-lg shadow-[#0C6CF2]/35">
+                      Launch Explorer Portal &rarr;
                     </Button>
                   </Link>
                 </div>
@@ -468,14 +488,14 @@ export default function LandingPage() {
 
               {/* Right interactive explorer box */}
               <div className="lg:col-span-7">
-                <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-6 shadow-2xl">
+                <div className="rounded-3xl border border-[#222222] bg-[#101010] p-6 shadow-2xl">
                   {/* Explorer Nav Tabs */}
-                  <div className="flex items-center justify-between border-b border-[#1E2330] pb-4 mb-6">
+                  <div className="flex items-center justify-between border-b border-[#222222] pb-4 mb-6">
                     <div className="flex items-center gap-3">
                       <button
                         onClick={() => setActiveTab('cert')}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                          activeTab === 'cert' ? 'bg-[#6916F5] text-white' : 'text-[#8F96A3] hover:text-white'
+                          activeTab === 'cert' ? 'bg-[#0C6CF2] text-white' : 'text-[#8F96A3] hover:text-white'
                         }`}
                       >
                         Latest Verified Credentials
@@ -483,14 +503,14 @@ export default function LandingPage() {
                       <button
                         onClick={() => setActiveTab('contract')}
                         className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
-                          activeTab === 'contract' ? 'bg-[#6916F5] text-white' : 'text-[#8F96A3] hover:text-white'
+                          activeTab === 'contract' ? 'bg-[#0C6CF2] text-white' : 'text-[#8F96A3] hover:text-white'
                         }`}
                       >
                         Smart Contract State
                       </button>
                     </div>
-                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
-                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                    <span className="text-[11px] font-mono text-[#00D26A] flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-[#00D26A] animate-pulse" />
                       Live Feed
                     </span>
                   </div>
@@ -503,35 +523,35 @@ export default function LandingPage() {
                         { id: 'CERT-2026-CAM819J', recipient: 'Elena Rostova', course: 'Distributed Cryptography', time: '1m ago', status: 'VALID' },
                         { id: 'CERT-2026-MIT503X', recipient: 'Marcus Vance', course: 'Smart Contract Architecture', time: '3m ago', status: 'VALID' },
                       ].map((item, i) => (
-                        <div key={i} className="flex items-center justify-between p-3.5 rounded-xl bg-[#07090E] border border-[#1E2330] hover:border-[#6916F5]/40 transition">
+                        <div key={i} className="flex items-center justify-between p-3.5 rounded-xl bg-[#000000] border border-[#222222] hover:border-[#0C6CF2]/40 transition">
                           <div>
-                            <span className="font-bold text-[#00C2FF]">{item.id}</span>
+                            <span className="font-bold text-[#0C6CF2]">{item.id}</span>
                             <p className="text-[#8F96A3] text-[11px] mt-0.5">{item.recipient} • {item.course}</p>
                           </div>
                           <div className="text-right">
                             <span className="inline-block px-2 py-0.5 rounded bg-[#00D26A]/10 text-[#00D26A] text-[10px] font-bold">
                               {item.status}
                             </span>
-                            <p className="text-[10px] text-[#5A6072] mt-0.5">{item.time}</p>
+                            <p className="text-[10px] text-[#555555] mt-0.5">{item.time}</p>
                           </div>
                         </div>
                       ))}
                     </div>
                   ) : (
                     <div className="space-y-3 font-mono text-xs">
-                      <div className="p-3.5 rounded-xl bg-[#07090E] border border-[#1E2330]">
-                        <span className="text-[#5A6072] text-[10px]">Contract Registry Address</span>
-                        <p className="text-[#B89DFF] text-[11px] break-all font-bold mt-0.5">
+                      <div className="p-3.5 rounded-xl bg-[#000000] border border-[#222222]">
+                        <span className="text-[#555555] text-[10px]">Contract Registry Address</span>
+                        <p className="text-[#0C6CF2] text-[11px] break-all font-bold mt-0.5">
                           0x5FbDB2315678afecb367f032d93F642f64180aa3
                         </p>
                       </div>
                       <div className="grid grid-cols-2 gap-3">
-                        <div className="p-3 rounded-xl bg-[#07090E] border border-[#1E2330]">
-                          <span className="text-[#5A6072] text-[10px]">Active Network</span>
+                        <div className="p-3 rounded-xl bg-[#000000] border border-[#222222]">
+                          <span className="text-[#555555] text-[10px]">Active Network</span>
                           <p className="text-white font-bold mt-0.5">Sepolia EVM</p>
                         </div>
-                        <div className="p-3 rounded-xl bg-[#07090E] border border-[#1E2330]">
-                          <span className="text-[#5A6072] text-[10px]">Solidity Compiler</span>
+                        <div className="p-3 rounded-xl bg-[#000000] border border-[#222222]">
+                          <span className="text-[#555555] text-[10px]">Solidity Compiler</span>
                           <p className="text-white font-bold mt-0.5">0.8.20 (Cancun)</p>
                         </div>
                       </div>
@@ -545,26 +565,22 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 7: FOR INSTITUTIONS & BUSINESS                                    */}
+        {/* SECTION 7: FOR BUSINESS & INSTITUTIONS ("For business")                   */}
         {/* ========================================================================= */}
-        <section id="institutional" className="py-24 border-t border-[#1E2330] bg-[#0A0D14]/70">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-            <div className="text-center max-w-[640px] mx-auto mb-16 space-y-4">
-              <div className="inline-flex items-center gap-2 rounded-full border border-[#6916F5]/25 bg-[#6916F5]/10 px-4 py-1 text-[11px] font-semibold text-[#B89DFF] uppercase tracking-widest">
-                <Building2 className="h-3.5 w-3.5" />
-                Enterprise Accreditation
-              </div>
-              <h2 className="text-[34px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
-                For universities & accreditors.
+        <section id="institutional" className="py-24 border-t border-[#222222] bg-[#0A0A0A]">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
+            <div className="text-center max-w-[680px] mx-auto mb-16 space-y-4">
+              <h2 className="text-[36px] sm:text-[52px] font-[900] tracking-[-0.03em] text-white leading-[1.06]">
+                For business & institutions.
               </h2>
-              <p className="text-[#8F96A3] text-[17px] leading-relaxed">
-                From universities to state boards, academies to corporate accreditors, we facilitate best-in-class infrastructure for digital credentials.
+              <p className="text-[#8F96A3] text-[18px] leading-relaxed">
+                From universities to state boards, academies to corporate accreditors, we facilitate best-in-class infrastructure for those looking to venture beyond what came before.
               </p>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#6916F5]/20 text-[#B89DFF] flex items-center justify-center font-bold">
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#0C6CF2]/15 text-[#0C6CF2] flex items-center justify-center font-bold">
                   01
                 </div>
                 <h3 className="text-xl font-bold text-white">Batch Credential Minting</h3>
@@ -573,23 +589,23 @@ export default function LandingPage() {
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#00C2FF]/20 text-[#00C2FF] flex items-center justify-center font-bold">
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#00C2FF]/15 text-[#00C2FF] flex items-center justify-center font-bold">
                   02
                 </div>
-                <h3 className="text-xl font-bold text-white">Automated SMTP Dispatch</h3>
+                <h3 className="text-xl font-bold text-white">Automated Delivery</h3>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
                   Automatic email delivery with high-resolution PDF attachments and embedded QR verification codes sent to graduates.
                 </p>
               </div>
 
-              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
-                <div className="h-10 w-10 rounded-xl bg-[#00D26A]/20 text-[#00D26A] flex items-center justify-center font-bold">
+              <div className="rounded-3xl border border-[#222222] bg-[#101010] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#00D26A]/15 text-[#00D26A] flex items-center justify-center font-bold">
                   03
                 </div>
-                <h3 className="text-xl font-bold text-white">Multi-Admin Access</h3>
+                <h3 className="text-xl font-bold text-white">Secure Custody & Keys</h3>
                 <p className="text-sm text-[#8F96A3] leading-relaxed">
-                  Role-based access control via Supabase Auth and cryptographic keys, safeguarding institution issuing privileges.
+                  Safeguard issuing credentials with military-grade security and rigorous compliance standards.
                 </p>
               </div>
             </div>
@@ -597,111 +613,83 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 8: STATS TICKER STRIP                                            */}
+        {/* SECTION 8: KEY STATISTICS STRIP ($1.1T+ Transacted)                       */}
         {/* ========================================================================= */}
-        <section className="border-y border-[#1E2330] bg-[#07090E] py-12">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+        <section className="border-y border-[#222222] bg-[#000000] py-14">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { value: '0.0%', label: 'Fraud & Forgery Rate', color: 'text-white' },
-                { value: '100%', label: 'On-Chain Consensus', color: 'text-[#00C2FF]' },
-                { value: '< 1.0s', label: 'Verification Latency', color: 'text-white' },
-                { value: '256-Bit', label: 'SHA Proof', color: 'text-[#B89DFF]' },
-              ].map((stat, i) => (
-                <div key={i} className="space-y-1">
-                  <p className={`text-[36px] sm:text-[44px] font-[900] tracking-[-0.03em] ${stat.color}`}>
-                    {stat.value}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#5A6072] font-semibold">{stat.label}</p>
-                </div>
-              ))}
+              <div className="space-y-1">
+                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em] text-white">0.0%</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">Fraud Rate</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em] text-[#0C6CF2]">100%</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">On-Chain Consensus</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em] text-white">&lt; 1.0s</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">Verification Speed</p>
+              </div>
+              <div className="space-y-1">
+                <p className="text-[40px] sm:text-[52px] font-[900] tracking-[-0.03em] text-[#00C2FF]">256-Bit</p>
+                <p className="text-[12px] uppercase tracking-[0.14em] text-[#666666] font-bold">SHA Security</p>
+              </div>
             </div>
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 9: TRUSTED BY LEADING INSTITUTIONS                                */}
+        {/* SECTION 9: TRUSTED BY LEADING INVESTORS & INSTITUTIONS (With Real SVGs)   */}
         {/* ========================================================================= */}
-        <section className="py-20 bg-[#0A0D14]/80">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8 text-center space-y-8">
-            <h3 className="text-xs font-bold uppercase tracking-widest text-[#5A6072]">
-              Trusted by Leading Educational Institutions & Open Standards
+        <section className="py-20 bg-[#0A0A0A]">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8 text-center space-y-8">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#666666]">
+              Trusted by leading investors & institutions
             </h3>
-            <div className="flex flex-wrap items-center justify-center gap-10 opacity-70 grayscale hover:grayscale-0 transition-all">
-              <span className="text-lg font-extrabold tracking-tight text-slate-300">OXFORD ACADEMIA</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-300">CAMBRIDGE REGISTRY</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-300">OPENZEPPELIN</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-300">ETHEREUM FOUNDATION</span>
-              <span className="text-lg font-extrabold tracking-tight text-slate-300">SUPABASE POSTGRES</span>
+            <div className="flex flex-wrap items-center justify-center gap-12 opacity-80 hover:opacity-100 transition">
+              <Image src="/blockchain/vy-v2.svg" alt="Vy Capital" width={100} height={32} className="h-7 w-auto invert" />
+              <Image src="/blockchain/light-speed-v2.svg" alt="Lightspeed" width={120} height={32} className="h-7 w-auto invert" />
+              <Image src="/blockchain/lake-star-v2.svg" alt="Lakestar" width={110} height={32} className="h-7 w-auto invert" />
+              <Image src="/blockchain/gv-v2.svg" alt="GV" width={60} height={32} className="h-7 w-auto invert" />
+              <Image src="/blockchain/kyle-bass-v2.svg" alt="Kyle Bass" width={110} height={32} className="h-7 w-auto invert" />
             </div>
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 10: LATEST INSIGHTS & RESEARCH                                    */}
+        {/* SECTION 10: WHAT'S BEEN HAPPENING AND LATEST RESEARCH                     */}
         {/* ========================================================================= */}
-        <section className="py-24 border-t border-[#1E2330] bg-[#07090E]">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+        <section className="py-24 border-t border-[#222222] bg-[#000000]">
+          <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
             <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-16 gap-4">
               <div>
-                <h2 className="text-xs font-bold uppercase tracking-widest text-[#B89DFF] mb-2">Research & Standards</h2>
-                <p className="text-[32px] font-[900] tracking-tight text-white">What&apos;s happening in verifiable credentials</p>
+                <h2 className="text-[36px] sm:text-[44px] font-[900] tracking-tight text-white leading-tight">
+                  What&apos;s been happening <br />and latest research
+                </h2>
               </div>
-              <Link href="/verify" className="text-sm font-semibold text-[#00C2FF] hover:underline inline-flex items-center gap-1">
-                Explore research papers &rarr;
+              <Link href="/verify" className="text-sm font-semibold text-[#0C6CF2] hover:underline inline-flex items-center gap-1">
+                Read all articles &rarr;
               </Link>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
               {[
-                { title: 'The End of Diploma Mills: How Smart Contracts Guarantee Authenticity', date: 'Aug 2026', tag: 'Security' },
-                { title: 'Deterministic SHA-256 vs Merkle Roots in High-Throughput Accreditation', date: 'Aug 2026', tag: 'Architecture' },
-                { title: 'Decentralized Identifiers (DIDs) & W3C Verifiable Credentials on EVM', date: 'Jul 2026', tag: 'Standards' },
+                { title: 'The End of Diploma Mills: How Smart Contracts Guarantee Authenticity', date: 'Aug 14, 2026', tag: 'Security' },
+                { title: 'Deterministic SHA-256 vs Merkle Roots in High-Throughput Accreditation', date: 'Aug 11, 2026', tag: 'Architecture' },
+                { title: 'Decentralized Identifiers (DIDs) & W3C Verifiable Credentials on EVM', date: 'Aug 04, 2026', tag: 'Standards' },
               ].map((art, i) => (
-                <div key={i} className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-7 space-y-4 hover:border-[#6916F5]/50 transition">
-                  <div className="flex items-center justify-between text-xs text-[#5A6072]">
-                    <span className="font-mono text-[#00C2FF]">{art.tag}</span>
+                <div key={i} className="rounded-3xl border border-[#222222] bg-[#101010] p-7 space-y-4 hover:border-[#0C6CF2]/60 transition">
+                  <div className="flex items-center justify-between text-xs text-[#555555]">
+                    <span className="font-mono text-[#0C6CF2] font-bold">{art.tag}</span>
                     <span>{art.date}</span>
                   </div>
                   <h3 className="text-lg font-bold text-white leading-snug">{art.title}</h3>
                   <p className="text-xs text-[#8F96A3]">
                     Deep dive into how decentralized consensus eliminates counterfeit documents permanently.
                   </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* ========================================================================= */}
-        {/* SECTION 11: HOW IT WORKS / LIFECYCLE WORKFLOW                             */}
-        {/* ========================================================================= */}
-        <section id="how-it-works" className="py-24 border-t border-[#1E2330] bg-[#0A0D14]">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-            <div className="text-center max-w-[560px] mx-auto mb-16 space-y-3">
-              <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#B89DFF]">
-                Protocol Lifecycle
-              </h2>
-              <p className="text-[34px] sm:text-[44px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
-                How Citadel anchors trust.
-              </p>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {[
-                { step: '01', title: 'Issue & Hash', desc: 'The verified institution submits recipient data. Citadel calculates a deterministic SHA-256 cryptographic hash across the certificate.', color: '#6916F5' },
-                { step: '02', title: 'Ethereum Consensus', desc: 'The transaction is broadcast to the network. The CertificateRegistry smart contract anchors the hash into an immutable block.', color: '#00C2FF' },
-                { step: '03', title: 'Public Verification', desc: 'Recipients receive their PDF and QR code. Anyone in the world can independently verify authenticity — no login required.', color: '#00D26A' },
-              ].map((s, i) => (
-                <div key={i} className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-5 transition hover:border-[#6916F5]/40">
-                  <div
-                    className="h-11 w-11 rounded-xl font-[900] text-[14px] flex items-center justify-center text-white"
-                    style={{ backgroundColor: s.color, boxShadow: `0 0 20px ${s.color}40` }}
-                  >
-                    {s.step}
+                  <div className="pt-2 text-xs font-bold text-[#0C6CF2]">
+                    Read more →
                   </div>
-                  <h3 className="text-[20px] font-bold text-white">{s.title}</h3>
-                  <p className="text-[14px] text-[#8F96A3] leading-[1.75]">{s.desc}</p>
                 </div>
               ))}
             </div>
@@ -709,27 +697,50 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* SECTION 12: FINAL HIGH-IMPACT CTA ("Issue like an icon")                  */}
+        {/* SECTION 11: CAREERS & MISSION ("Building the future of finance")           */}
         {/* ========================================================================= */}
-        <section className="py-24 relative">
-          <div className="container mx-auto max-w-[960px] px-6 sm:px-8">
-            <div className="relative rounded-3xl border border-[#6916F5]/40 bg-gradient-to-br from-[#6916F5]/20 via-[#0E121B] to-[#00C2FF]/10 p-10 md:p-16 text-center shadow-[0_20px_60px_rgba(105,22,245,0.25)] backdrop-blur-2xl">
-              <div className="relative z-10 mx-auto max-w-[580px] space-y-6">
-                <h2 className="text-[36px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
-                  Issue like an icon<span className="text-[#6916F5]">.</span>
+        <section className="py-24 border-t border-[#222222] bg-[#0A0A0A]">
+          <div className="container mx-auto max-w-[1000px] px-6 sm:px-8 text-center space-y-6">
+            <h2 className="text-[36px] sm:text-[54px] font-[900] tracking-[-0.03em] text-white leading-[1.06]">
+              Building the <br />future of verifiable trust
+            </h2>
+            <p className="text-[#8F96A3] text-[18px] max-w-[700px] mx-auto leading-relaxed">
+              Our global team is united by a shared mission: to usher in a brave new world by accelerating the adoption of cryptographic verification and building a more open, accessible, and inclusive credential future for everyone.
+            </p>
+            <div className="pt-4">
+              <Link href="/register">
+                <Button className="bg-[#181818] hover:bg-[#222222] text-white border border-[#333333] font-bold rounded-full px-8 py-6 text-sm">
+                  Join our mission &rarr;
+                </Button>
+              </Link>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 12: FINAL CTA ("Invest like an icon")                             */}
+        {/* ========================================================================= */}
+        <section className="py-24 relative bg-[#000000]">
+          <div className="container mx-auto max-w-[1000px] px-6 sm:px-8">
+            <div className="relative rounded-3xl border border-[#222222] bg-[#101010] p-10 md:p-16 text-center shadow-2xl overflow-hidden">
+              <div className="relative z-10 mx-auto max-w-[620px] space-y-6">
+                <h2 className="text-[40px] sm:text-[56px] font-[900] tracking-[-0.03em] text-white leading-[1.04]">
+                  Issue like an icon<span className="text-[#0C6CF2]">.</span>
                 </h2>
-                <p className="text-[#8F96A3] text-[16px] leading-relaxed">
-                  Join leading universities and accredited training organizations issuing blockchain-backed credentials today.
-                </p>
+                <div className="flex items-center justify-center gap-3 text-xs text-[#8F96A3]">
+                  <span>Available on Web, iOS & Android</span>
+                  <span>•</span>
+                  <span className="text-amber-400 font-bold">★ 4.8 / 5</span>
+                </div>
                 <div className="flex flex-col sm:flex-row justify-center gap-3 pt-3">
                   <Link href="/register">
-                    <button className="w-full sm:w-auto h-12 px-8 rounded-full bg-[#6916F5] hover:bg-[#7C3AED] text-[15px] font-bold text-white shadow-[0_0_28px_rgba(105,22,245,0.4)] transition-all hover:scale-105 active:scale-95">
-                      Get Started Free
+                    <button className="w-full sm:w-auto h-12 px-9 rounded-full bg-[#0C6CF2] hover:bg-[#0050D8] text-[15px] font-bold text-white shadow-xl shadow-[#0C6CF2]/30 transition hover:scale-105 active:scale-95">
+                      Get started
                     </button>
                   </Link>
                   <Link href="/verify">
-                    <button className="w-full sm:w-auto h-12 px-8 rounded-full border border-[#1E2330] bg-[#0E121B] text-[15px] font-semibold text-white hover:bg-[#131822] transition-all">
-                      Verify Credential
+                    <button className="w-full sm:w-auto h-12 px-9 rounded-full border border-[#222222] bg-[#181818] text-[15px] font-bold text-white hover:bg-[#222222] transition">
+                      Verify credentials
                     </button>
                   </Link>
                 </div>
@@ -740,54 +751,63 @@ export default function LandingPage() {
       </main>
 
       {/* ========================================================================= */}
-      {/* ENTERPRISE FOOTER                                                         */}
+      {/* ENTERPRISE FOOTER (Exact Multi-Column Footer)                             */}
       {/* ========================================================================= */}
-      <footer className="border-t border-[#1E2330] bg-[#05070A] py-14 text-[13px]">
-        <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-12 border-b border-[#1E2330]/60">
+      <footer className="border-t border-[#222222] bg-[#050505] py-16 text-[13px]">
+        <div className="container mx-auto max-w-[1280px] px-6 sm:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-14 border-b border-[#222222]">
             <div className="col-span-2 space-y-4">
               <div className="flex items-center gap-3">
                 <CitadelLogo className="h-9 w-9" />
-                <span className="text-[20px] font-[900] text-white tracking-[-0.02em]">Citadel</span>
+                <span className="text-[22px] font-[900] text-white tracking-[-0.02em]">Citadel</span>
               </div>
-              <p className="text-[12px] text-[#5A6072] max-w-[320px] leading-relaxed">
-                The global infrastructure platform for blockchain-anchored credentials. Powered by Ethereum, Supabase, and Ethers.js.
+              <p className="text-[12px] text-[#666666] max-w-[320px] leading-relaxed">
+                The global infrastructure platform for digital credentials. Powered by Ethereum smart contracts, Supabase, and Ethers.js.
               </p>
+              <div className="flex gap-4 pt-2">
+                <Image src="/blockchain/x2-white.png" alt="Twitter" width={16} height={16} className="opacity-60 hover:opacity-100 transition cursor-pointer" />
+                <Image src="/blockchain/linkedin2-white.png" alt="LinkedIn" width={16} height={16} className="opacity-60 hover:opacity-100 transition cursor-pointer" />
+                <Image src="/blockchain/instagram2-white.png" alt="Instagram" width={16} height={16} className="opacity-60 hover:opacity-100 transition cursor-pointer" />
+                <Image src="/blockchain/facebook2-white.png" alt="Facebook" width={16} height={16} className="opacity-60 hover:opacity-100 transition cursor-pointer" />
+              </div>
             </div>
 
             <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Platform</h4>
-              <ul className="space-y-2.5 text-xs text-[#5A6072]">
-                <li><Link href="/dashboard" className="hover:text-white transition-colors">Dashboard</Link></li>
-                <li><Link href="/dashboard/certificates/new" className="hover:text-white transition-colors">Issue Certificate</Link></li>
-                <li><Link href="/verify" className="hover:text-white transition-colors">Public Explorer</Link></li>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Products</h4>
+              <ul className="space-y-3 text-xs text-[#666666]">
+                <li><Link href="/dashboard" className="hover:text-white transition">Issuer Portal</Link></li>
+                <li><Link href="/dashboard/certificates/new" className="hover:text-white transition">Issue Certificate</Link></li>
+                <li><Link href="/verify" className="hover:text-white transition">Explorer</Link></li>
+                <li><span className="hover:text-white transition cursor-pointer">DeFi Credentialing</span></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Smart Contracts</h4>
-              <ul className="space-y-2.5 text-xs text-[#5A6072]">
-                <li><span>OpenZeppelin Standards</span></li>
-                <li><span>SHA-256 Hashing</span></li>
-                <li><span>Sepolia EVM Protocol</span></li>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Resources</h4>
+              <ul className="space-y-3 text-xs text-[#666666]">
+                <li><span className="hover:text-white transition cursor-pointer">Smart Contract APIs</span></li>
+                <li><span className="hover:text-white transition cursor-pointer">Solidity Bytecode</span></li>
+                <li><span className="hover:text-white transition cursor-pointer">OpenZeppelin Ownable</span></li>
+                <li><span className="hover:text-white transition cursor-pointer">Sepolia EVM Explorer</span></li>
               </ul>
             </div>
 
             <div>
-              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Account</h4>
-              <ul className="space-y-2.5 text-xs text-[#5A6072]">
-                <li><Link href="/login" className="hover:text-white transition-colors">Sign In</Link></li>
-                <li><Link href="/register" className="hover:text-white transition-colors">Create Account</Link></li>
-                <li><Link href="/forgot-password" className="hover:text-white transition-colors">Reset Password</Link></li>
+              <h4 className="text-[11px] font-bold uppercase tracking-[0.14em] text-[#8F96A3] mb-4">Company</h4>
+              <ul className="space-y-3 text-xs text-[#666666]">
+                <li><Link href="/login" className="hover:text-white transition">Sign In</Link></li>
+                <li><Link href="/register" className="hover:text-white transition">Create Account</Link></li>
+                <li><span className="hover:text-white transition cursor-pointer">About Us</span></li>
+                <li><span className="hover:text-white transition cursor-pointer">Legal & Privacy</span></li>
               </ul>
             </div>
           </div>
 
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#5A6072]">
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-[12px] text-[#666666]">
             <p>&copy; {currentYear} Citadel. All rights reserved.</p>
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-2 text-xs">
               <span className="h-2 w-2 rounded-full bg-[#00D26A] animate-pulse" />
-              <span>Ethereum Sepolia Live</span>
+              <span>Ethereum Sepolia Network Live</span>
             </div>
           </div>
         </div>
