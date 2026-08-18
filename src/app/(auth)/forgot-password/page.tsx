@@ -17,6 +17,8 @@ import {
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
 
+import { CitadelLogo } from '@/components/ui/citadel-logo';
+
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
   const [supabase] = useState(() => createClient());
@@ -58,10 +60,10 @@ export default function ForgotPasswordPage() {
       setIsSubmitted(true);
       toast({
         title: 'Reset Link Sent',
-        description: 'Please check your email inbox for instructions to reset your password.',
+        description: 'Check your email inbox for password reset instructions.',
       });
     } catch (err: any) {
-      const msg = err?.message || 'An unexpected error occurred. Please try again.';
+      const msg = err?.message || 'An unexpected error occurred.';
       setErrorMessage(msg);
       toast({
         variant: 'destructive',
@@ -76,8 +78,8 @@ export default function ForgotPasswordPage() {
   return (
     <Card className="w-full border-slate-200 bg-white shadow-xl">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-          <KeyRound className="h-6 w-6" />
+        <div className="mx-auto mb-2 flex items-center justify-center">
+          <CitadelLogo className="h-14 w-14" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
           Reset Password

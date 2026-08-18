@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -163,8 +164,8 @@ export default function RegisterPage() {
   return (
     <Card className="w-full border-slate-200 bg-white shadow-xl">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-          <Building2 className="h-6 w-6" />
+        <div className="mx-auto mb-2 flex items-center justify-center">
+          <CitadelLogo className="h-14 w-14" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
           Register Organization

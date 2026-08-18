@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -33,13 +34,18 @@ export default function ResetPasswordPage() {
     e.preventDefault();
     setErrorMessage(null);
 
-    if (!password || password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
+    if (!password) {
+      setErrorMessage('Please enter a new password.');
+      return;
+    }
+
+    if (password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
       return;
     }
 
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match. Please re-enter.');
+      setErrorMessage('Passwords do not match.');
       return;
     }
 
@@ -85,8 +91,8 @@ export default function ResetPasswordPage() {
   return (
     <Card className="w-full border-slate-200 bg-white shadow-xl">
       <CardHeader className="space-y-2 text-center pb-6">
-        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-md">
-          <Lock className="h-6 w-6" />
+        <div className="mx-auto mb-2 flex items-center justify-center">
+          <CitadelLogo className="h-14 w-14" />
         </div>
         <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
           Create New Password

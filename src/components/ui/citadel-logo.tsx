@@ -19,6 +19,7 @@ export function CitadelLogo({
         height={size * 2}
         className="h-full w-full object-contain filter drop-shadow-sm transition-transform hover:scale-105"
         priority
+        unoptimized
       />
     </div>
   );

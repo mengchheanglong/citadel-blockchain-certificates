@@ -39,8 +39,8 @@ export async function generateCertificatePDF(data: CertificatePDFData): Promise<
   doc.rect(0, 0, pageWidth, pageHeight, 'F');
 
   // 2. Decorative Double Borders
-  // Outer Blue Border
-  doc.setDrawColor(30, 58, 138); // #1e3a8a
+  // Outer Burgundy Red Border
+  doc.setDrawColor(158, 27, 50); // #9E1B32 Citadel Burgundy
   doc.setLineWidth(1.5);
   doc.rect(10, 10, pageWidth - 20, pageHeight - 20);
 
