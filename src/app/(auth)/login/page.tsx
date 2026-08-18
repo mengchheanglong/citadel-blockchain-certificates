@@ -3,7 +3,6 @@
 import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { signIn } from 'next-auth/react';
 import { Shield, Loader2, AlertCircle, Lock, Mail, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -17,12 +16,14 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { createClient } from '@/utils/supabase/client';
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get('callbackUrl') || '/dashboard';
   const { toast } = useToast();
+  const [supabase] = useState(() => createClient());
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -41,25 +42,23 @@ function LoginForm() {
     setIsLoading(true);
 
     try {
-      const result = await signIn('credentials', {
+      const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
         password,
-        redirect: false,
       });
 
-      if (result?.error) {
-        setErrorMessage(
-          result.error === 'CredentialsSignin'
-            ? 'Invalid email or password. Please check your credentials and try again.'
-            : result.error
-        );
+      if (error) {
+        setErrorMessage(error.message);
         toast({
           variant: 'destructive',
           title: 'Sign In Failed',
-          description: 'Invalid email or password. Please try again.',
+          description: error.message,
         });
         setIsLoading(false);
-      } else if (result?.ok) {
+        return;
+      }
+
+      if (data.user) {
         toast({
           title: 'Signed in successfully',
           description: 'Redirecting to your organization dashboard...',

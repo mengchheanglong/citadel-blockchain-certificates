@@ -1,96 +1,100 @@
-import type { NextAuthOptions, DefaultSession, User as NextAuthUser } from 'next-auth';
-import type { JWT } from 'next-auth/jwt';
-import { getServerSession } from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import bcrypt from 'bcryptjs';
+import { cookies } from 'next/headers';
+import { createClient } from '@/utils/supabase/server';
 import { prisma } from '@/lib/db';
+import type { Organization } from '@prisma/client';
 
-declare module 'next-auth' {
-  interface Session {
-    user: {
-      id: string;
-      name?: string | null;
-      email?: string | null;
-      image?: string | null;
-    } & DefaultSession['user'];
-  }
-
-  interface User {
+export interface AuthSession {
+  user: {
     id: string;
-    email?: string | null;
-    name?: string | null;
+    email: string;
+    name: string;
+  };
+  organization: Organization;
+}
+
+/**
+ * Retrieves the current authenticated Supabase user on the server.
+ */
+export async function getAuthUser() {
+  try {
+    const cookieStore = cookies();
+    const supabase = createClient(cookieStore);
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.getUser();
+
+    if (error || !user) {
+      return null;
+    }
+
+    return user;
+  } catch (err) {
+    console.error('Error fetching Supabase auth user:', err);
+    return null;
   }
 }
 
-declare module 'next-auth/jwt' {
-  interface JWT {
-    id?: string;
+/**
+ * Retrieves the authenticated user and matches/creates their Organization record in Prisma.
+ */
+export async function getOrganizationSession(): Promise<AuthSession | null> {
+  const user = await getAuthUser();
+  if (!user || !user.email) {
+    return null;
   }
+
+  // Find organization by email or ID
+  let organization = await prisma.organization.findFirst({
+    where: {
+      OR: [{ id: user.id }, { email: user.email.toLowerCase() }],
+    },
+  });
+
+  // If organization record doesn't exist in Prisma yet, auto-provision it from Supabase auth metadata
+  if (!organization) {
+    const orgName =
+      user.user_metadata?.name ||
+      user.user_metadata?.organizationName ||
+      user.email.split('@')[0] ||
+      'Organization';
+
+    try {
+      organization = await prisma.organization.create({
+        data: {
+          id: user.id,
+          email: user.email.toLowerCase(),
+          name: orgName,
+          passwordHash: 'supabase-auth-managed',
+        },
+      });
+    } catch (createErr) {
+      // If race condition created it, query again
+      organization = await prisma.organization.findFirst({
+        where: {
+          OR: [{ id: user.id }, { email: user.email.toLowerCase() }],
+        },
+      });
+    }
+  }
+
+  if (!organization) {
+    return null;
+  }
+
+  return {
+    user: {
+      id: organization.id,
+      email: organization.email,
+      name: organization.name,
+    },
+    organization,
+  };
 }
 
-export const authOptions: NextAuthOptions = {
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/login',
-  },
-  secret: process.env.NEXTAUTH_SECRET,
-  providers: [
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
-          throw new Error('Email and password are required');
-        }
-
-        const email = credentials.email.toLowerCase().trim();
-
-        const organization = await prisma.organization.findUnique({
-          where: { email },
-        });
-
-        if (!organization || !organization.passwordHash) {
-          throw new Error('Invalid email or password');
-        }
-
-        const isPasswordValid = await bcrypt.compare(
-          credentials.password,
-          organization.passwordHash
-        );
-
-        if (!isPasswordValid) {
-          throw new Error('Invalid email or password');
-        }
-
-        return {
-          id: organization.id,
-          email: organization.email,
-          name: organization.name,
-        };
-      },
-    }),
-  ],
-  callbacks: {
-    async jwt({ token, user }) {
-      if (user) {
-        token.id = user.id;
-      }
-      return token;
-    },
-    async session({ session, token }) {
-      if (session.user && token) {
-        session.user.id = (token.id as string) || (token.sub as string);
-      }
-      return session;
-    },
-  },
-};
-
-export const getServerAuthSession = () => getServerSession(authOptions);
-export const getAuthSession = () => getServerSession(authOptions);
-export const auth = () => getServerSession(authOptions);
+/**
+ * Backward compatibility helpers
+ */
+export const getServerAuthSession = getOrganizationSession;
+export const getAuthSession = getOrganizationSession;
+export const auth = getOrganizationSession;

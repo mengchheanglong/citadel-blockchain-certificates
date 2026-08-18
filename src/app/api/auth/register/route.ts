@@ -1,12 +1,13 @@
 import { NextResponse } from 'next/server';
-import bcrypt from 'bcryptjs';
 import { z } from 'zod';
 import { prisma } from '@/lib/db';
 
 const registerSchema = z.object({
+  id: z.string().optional(),
   name: z.string().min(2, 'Name must be at least 2 characters'),
   email: z.string().email('Invalid email address'),
-  password: z.string().min(6, 'Password must be at least 6 characters'),
+  description: z.string().optional(),
+  website: z.string().optional(),
 });
 
 export async function POST(request: Request) {
@@ -25,46 +26,64 @@ export async function POST(request: Request) {
       );
     }
 
-    const { name, email, password } = parseResult.data;
+    const { id, name, email, description, website } = parseResult.data;
     const normalizedEmail = email.toLowerCase().trim();
 
-    const existingOrganization = await prisma.organization.findUnique({
-      where: { email: normalizedEmail },
+    const existingOrganization = await prisma.organization.findFirst({
+      where: {
+        OR: [
+          ...(id ? [{ id }] : []),
+          { email: normalizedEmail },
+        ],
+      },
     });
 
     if (existingOrganization) {
+      // Update existing record if needed
+      const updated = await prisma.organization.update({
+        where: { id: existingOrganization.id },
+        data: {
+          name: name.trim(),
+          description: description || existingOrganization.description,
+          website: website || existingOrganization.website,
+        },
+      });
+
       return NextResponse.json(
         {
-          success: false,
-          message: 'Organization with this email already exists',
+          success: true,
+          message: 'Organization profile updated',
+          organization: updated,
         },
-        { status: 409 }
+        { status: 200 }
       );
     }
 
-    const passwordHash = await bcrypt.hash(password, 12);
-
-    await prisma.organization.create({
+    const organization = await prisma.organization.create({
       data: {
+        ...(id ? { id } : {}),
         name: name.trim(),
         email: normalizedEmail,
-        passwordHash,
+        passwordHash: 'supabase-auth-managed',
+        description: description || null,
+        website: website || null,
       },
     });
 
     return NextResponse.json(
       {
         success: true,
-        message: 'Organization registered',
+        message: 'Organization profile created successfully',
+        organization,
       },
       { status: 201 }
     );
-  } catch (error) {
-    console.error('Organization registration error:', error);
+  } catch (error: any) {
+    console.error('Organization sync/register error:', error);
     return NextResponse.json(
       {
         success: false,
-        message: 'Internal server error',
+        message: error?.message || 'Internal server error',
       },
       { status: 500 }
     );

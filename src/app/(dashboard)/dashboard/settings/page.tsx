@@ -1,21 +1,17 @@
 'use client';
 
 import React, { useState } from 'react';
-import { useSession } from 'next-auth/react';
+import { useSupabaseAuth } from '@/components/auth/supabase-provider';
 import {
   Building2,
   Mail,
-  Shield,
   Cpu,
-  Check,
   Copy,
-  ExternalLink,
+  Check,
   Info,
-  Server,
   KeyRound,
   FileCheck2,
 } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import {
   Card,
@@ -28,7 +24,7 @@ import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
 
 export default function SettingsPage() {
-  const { data: session } = useSession();
+  const { organization } = useSupabaseAuth();
   const { toast } = useToast();
 
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -87,7 +83,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/75 px-3 py-2.5">
                   <Building2 className="h-4 w-4 text-slate-400" />
                   <span className="text-sm font-semibold text-slate-900">
-                    {session?.user?.name || 'Issuer Organization'}
+                    {organization?.name || 'Issuer Organization'}
                   </span>
                 </div>
               </div>
@@ -100,7 +96,7 @@ export default function SettingsPage() {
                 <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/75 px-3 py-2.5">
                   <Mail className="h-4 w-4 text-slate-400" />
                   <span className="text-sm font-medium text-slate-800">
-                    {session?.user?.email || 'admin@organization.edu'}
+                    {organization?.email || 'admin@organization.edu'}
                   </span>
                 </div>
               </div>
@@ -109,9 +105,9 @@ export default function SettingsPage() {
             <div className="rounded-md border border-blue-100 bg-blue-50/60 p-4 text-xs text-blue-800 flex items-start gap-2.5">
               <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
               <div>
-                <p className="font-semibold">Issuer Authority Status: Verified</p>
+                <p className="font-semibold">Issuer Authority Status: Verified (Supabase Auth)</p>
                 <p className="mt-0.5 text-blue-700 leading-relaxed">
-                  Your organization account is authorized to sign, anchor, and revoke cryptographic credentials on the blockchain registry.
+                  Your organization account is authenticated via Supabase and authorized to sign, anchor, and revoke cryptographic credentials on the blockchain registry.
                 </p>
               </div>
             </div>

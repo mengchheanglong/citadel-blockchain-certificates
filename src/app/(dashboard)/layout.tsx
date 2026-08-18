@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { useSession, signOut } from 'next-auth/react';
+import { useSupabaseAuth } from '@/components/auth/supabase-provider';
 import {
   Shield,
   LayoutDashboard,
@@ -14,7 +14,6 @@ import {
   Building2,
   Menu,
   X,
-  User,
   ExternalLink,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -27,11 +26,11 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const { data: session } = useSession();
+  const { organization, signOut } = useSupabaseAuth();
   const [mobileOpen, setMobileOpen] = useState(false);
 
-  const orgName = session?.user?.name || 'Organization';
-  const orgEmail = session?.user?.email || '';
+  const orgName = organization?.name || 'Organization';
+  const orgEmail = organization?.email || '';
 
   const navItems = [
     {
@@ -68,7 +67,7 @@ export default function DashboardLayout({
   };
 
   const handleSignOut = async () => {
-    await signOut({ callbackUrl: '/login' });
+    await signOut();
   };
 
   return (

@@ -1,31 +1,32 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import type { Prisma } from '@prisma/client';
-import { authOptions } from '@/lib/auth';
+import { getOrganizationSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import {
-  generateCertificateId,
-  computeCertificateHash,
   issueCertOnChain,
+  computeCertificateHash,
+  generateCertificateId,
 } from '@/lib/blockchain';
+import { generateCertificatePDF } from '@/lib/pdf';
 import { generateQRCodeDataURL, getVerificationUrl } from '@/lib/qrcode';
 import { sendCertificateIssuedEmail } from '@/lib/email';
-import { generateCertificatePDF } from '@/lib/pdf';
 import { issueCertificateSchema } from '@/lib/validation';
 
 /**
  * POST /api/certificates
- * Issue a new certificate
+ * Issue a new certificate, anchor on blockchain, generate PDF & QR, store in DB, send email
  */
 export async function POST(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const session = await getOrganizationSession();
+    if (!session?.organization?.id) {
       return NextResponse.json(
-        { success: false, message: 'Unauthorized' },
+        { success: false, message: 'Unauthorized. Please sign in.' },
         { status: 401 }
       );
     }
+
+    const org = session.organization;
 
     const body = await request.json();
     const parseResult = issueCertificateSchema.safeParse(body);
@@ -38,17 +39,6 @@ export async function POST(request: Request) {
           errors: parseResult.error.flatten().fieldErrors,
         },
         { status: 400 }
-      );
-    }
-
-    const org = await prisma.organization.findUnique({
-      where: { id: session.user.id },
-    });
-
-    if (!org) {
-      return NextResponse.json(
-        { success: false, message: 'Organization not found' },
-        { status: 404 }
       );
     }
 
@@ -272,8 +262,8 @@ export async function POST(request: Request) {
  */
 export async function GET(request: Request) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const session = await getOrganizationSession();
+    if (!session?.organization?.id) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }

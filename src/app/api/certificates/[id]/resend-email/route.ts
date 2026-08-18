@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth';
 import type { BlockchainTransaction } from '@prisma/client';
-import { authOptions } from '@/lib/auth';
+import { getOrganizationSession } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { getVerificationUrl, generateQRCodeDataURL } from '@/lib/qrcode';
 import { sendCertificateIssuedEmail } from '@/lib/email';
@@ -19,8 +18,8 @@ interface RouteContext {
  */
 export async function POST(request: Request, { params }: RouteContext) {
   try {
-    const session = await getServerSession(authOptions);
-    if (!session?.user?.id) {
+    const session = await getOrganizationSession();
+    if (!session?.organization?.id) {
       return NextResponse.json(
         { success: false, message: 'Unauthorized' },
         { status: 401 }
@@ -52,7 +51,7 @@ export async function POST(request: Request, { params }: RouteContext) {
       );
     }
 
-    if (certificate.organizationId !== session.user.id) {
+    if (certificate.organizationId !== session.organization.id) {
       return NextResponse.json(
         { success: false, message: 'Forbidden' },
         { status: 403 }

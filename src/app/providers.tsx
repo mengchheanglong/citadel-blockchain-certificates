@@ -1,6 +1,6 @@
 'use client';
 
-import { SessionProvider } from 'next-auth/react';
+import { SupabaseAuthProvider } from '@/components/auth/supabase-provider';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { Toaster } from '@/components/ui/toaster';
@@ -19,11 +19,11 @@ export function Providers({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <SessionProvider>
+    <SupabaseAuthProvider>
       <QueryClientProvider client={queryClient}>
         {children}
         <Toaster />
       </QueryClientProvider>
-    </SessionProvider>
+    </SupabaseAuthProvider>
   );
 }

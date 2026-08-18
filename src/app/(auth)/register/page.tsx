@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Building2, Mail, Lock, CheckCircle2, AlertCircle, Loader2, ArrowRight } from 'lucide-react';
+import { Building2, Loader2, AlertCircle, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -16,10 +16,12 @@ import {
   CardFooter,
 } from '@/components/ui/card';
 import { useToast } from '@/components/ui/use-toast';
+import { createClient } from '@/utils/supabase/client';
 
 export default function RegisterPage() {
   const router = useRouter();
   const { toast } = useToast();
+  const [supabase] = useState(() => createClient());
 
   const [formData, setFormData] = useState({
     name: '',
@@ -33,19 +35,15 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({
+      ...prev,
+      [e.target.name]: e.target.value,
+    }));
+    if (errorMessage) setErrorMessage(null);
   };
 
   const validateForm = (): boolean => {
-    setErrorMessage(null);
-
-    if (!formData.name.trim()) {
-      setErrorMessage('Organization Name is required.');
-      return false;
-    }
-
-    if (formData.name.trim().length < 2) {
+    if (!formData.name.trim() || formData.name.trim().length < 2) {
       setErrorMessage('Organization Name must be at least 2 characters.');
       return false;
     }
@@ -91,42 +89,65 @@ export default function RegisterPage() {
     setSuccessMessage(null);
 
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: formData.name.trim(),
-          email: formData.email.trim().toLowerCase(),
-          password: formData.password,
-        }),
+      // 1. Sign up with Supabase Auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
+        options: {
+          data: {
+            name: formData.name.trim(),
+            organizationName: formData.name.trim(),
+          },
+        },
       });
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        const errorMsg =
-          data.message ||
-          (data.errors ? Object.values(data.errors).flat().join(', ') : 'Failed to register organization');
-        setErrorMessage(errorMsg);
+      if (authError) {
+        setErrorMessage(authError.message);
         toast({
           variant: 'destructive',
           title: 'Registration Failed',
-          description: errorMsg,
+          description: authError.message,
         });
         setIsLoading(false);
         return;
       }
 
-      setSuccessMessage('Registration successful! Redirecting to sign in...');
-      toast({
-        title: 'Account Created',
-        description: 'Your organization has been registered successfully.',
-      });
+      // 2. Sync / Upsert Organization profile in Prisma
+      try {
+        await fetch('/api/auth/register', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: authData.user?.id,
+            name: formData.name.trim(),
+            email: formData.email.trim().toLowerCase(),
+          }),
+        });
+      } catch (syncErr) {
+        console.warn('Organization profile sync error:', syncErr);
+      }
 
-      // Brief delay so user sees feedback before redirection
-      setTimeout(() => {
-        router.push('/login');
-      }, 1500);
+      // 3. Check if session was automatically created or email confirmation is pending
+      if (authData.session) {
+        setSuccessMessage('Registration successful! Redirecting to dashboard...');
+        toast({
+          title: 'Account Created',
+          description: 'Welcome to BlockCert! Redirecting...',
+        });
+        setTimeout(() => {
+          router.push('/dashboard');
+          router.refresh();
+        }, 1200);
+      } else {
+        setSuccessMessage('Account created! Please sign in with your credentials.');
+        toast({
+          title: 'Account Created',
+          description: 'Your organization has been registered successfully.',
+        });
+        setTimeout(() => {
+          router.push('/login');
+        }, 1500);
+      }
     } catch (err: any) {
       const msg = err?.message || 'Network error occurred. Please try again.';
       setErrorMessage(msg);
