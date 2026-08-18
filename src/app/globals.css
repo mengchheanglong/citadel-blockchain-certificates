@@ -39,11 +39,27 @@
   }
 }
 
-/* ============================================================
-   BLOCKCHAIN.COM-STYLE ANIMATION KEYFRAMES
-   ============================================================ */
+/* Marquee continuous horizontal loop */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
 
-/* Gentle floating for hero cards */
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 28s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+/* Custom Blockchain.com Animations & Keyframes */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }

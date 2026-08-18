@@ -19,26 +19,24 @@ import {
   Shield,
   Layers,
   Sparkles,
+  ChevronRight,
+  Globe2,
+  Building2,
+  Cpu,
+  FileText,
+  ExternalLink,
+  BookOpen,
+  Award,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { CitadelLogo } from '@/components/ui/citadel-logo';
-
-/* =========================================================================
-   EXACT BLOCKCHAIN.COM (2026) UI / UX SPECIFICATION
-   - Title: "Issue like an icon | Citadel"
-   - Mission: "The global infrastructure platform for digital credentials"
-   - Headline: "Issue like an icon."
-   - Subtitle: "We power credential authenticity for everyone: from students, to universities, to global institutions. Here for the future of digital trust."
-   - Dark Aesthetic: Deep Charcoal Obsidian (#07090E, #0D1117, #131822)
-   - Accent: Electric Indigo-Purple (#6916F5, #7C3AED) + Neon Cyan (#00C2FF)
-   - Font: Inter (tight negative tracking -0.04em, bold grotesque style)
-   ========================================================================= */
 
 export default function LandingPage() {
   const router = useRouter();
   const [certInput, setCertInput] = useState('');
   const [mobileNav, setMobileNav] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [activeTab, setActiveTab] = useState<'cert' | 'tx' | 'contract'>('cert');
   const currentYear = new Date().getFullYear();
 
   useEffect(() => {
@@ -53,15 +51,33 @@ export default function LandingPage() {
     router.push(`/verify/${encodeURIComponent(certInput.trim())}`);
   };
 
+  // Ticker marquee items
+  const marqueeItems = [
+    { name: 'Ethereum', tag: 'EVM Mainnet', color: '#627EEA' },
+    { name: 'Sepolia', tag: 'Testnet Protocol', color: '#00C2FF' },
+    { name: 'SHA-256', tag: 'Cryptographic Hash', color: '#6916F5' },
+    { name: 'OpenZeppelin', tag: 'Audited Contracts', color: '#4E5EE4' },
+    { name: 'Solidity 0.8.20', tag: 'Smart Contracts', color: '#363636' },
+    { name: 'Supabase', tag: 'PostgreSQL Cache', color: '#3ECF8E' },
+    { name: 'Ethers.js v6', tag: 'Web3 Client', color: '#2535A0' },
+    { name: 'Next.js 14', tag: 'App Router', color: '#FFFFFF' },
+    { name: 'Hardhat', tag: 'Local Node', color: '#FFF100' },
+  ];
+
   return (
     <div className="flex min-h-screen flex-col bg-[#07090E] text-white selection:bg-[#6916F5] selection:text-white antialiased overflow-x-hidden font-sans">
-      {/* Dynamic Background Glows */}
+      {/* ========================================================================= */}
+      {/* AMBIENT LIGHTING GLOWS                                                    */}
+      {/* ========================================================================= */}
       <div className="fixed inset-0 pointer-events-none z-0 overflow-hidden">
-        <div className="absolute -top-48 left-[20%] w-[750px] h-[750px] rounded-full bg-[#6916F5]/10 blur-[180px] animate-glow-pulse" />
-        <div className="absolute top-[35%] -right-48 w-[600px] h-[600px] rounded-full bg-[#00C2FF]/8 blur-[160px] animate-glow-pulse [animation-delay:3.5s]" />
+        <div className="absolute -top-48 left-[15%] w-[800px] h-[800px] rounded-full bg-[#6916F5]/12 blur-[190px] animate-glow-pulse" />
+        <div className="absolute top-[35%] -right-48 w-[650px] h-[650px] rounded-full bg-[#00C2FF]/8 blur-[180px] animate-glow-pulse [animation-delay:3.5s]" />
+        <div className="absolute -bottom-48 left-[5%] w-[750px] h-[750px] rounded-full bg-[#6916F5]/8 blur-[200px]" />
       </div>
 
-      {/* Sticky Header */}
+      {/* ========================================================================= */}
+      {/* STICKY HEADER (Matches Blockchain.com Top Bar)                           */}
+      {/* ========================================================================= */}
       <header
         className={`sticky top-0 z-50 w-full transition-all duration-300 ${
           scrolled
@@ -81,11 +97,12 @@ export default function LandingPage() {
           {/* Desktop Nav */}
           <nav className="hidden lg:flex items-center gap-8 text-[14px] font-medium text-[#8F96A3]">
             <Link href="#features" className="transition-colors hover:text-white">Features</Link>
+            <Link href="#explorer-section" className="transition-colors hover:text-white">Explorer</Link>
+            <Link href="#institutional" className="transition-colors hover:text-white">Institutions</Link>
             <Link href="#how-it-works" className="transition-colors hover:text-white">How It Works</Link>
-            <Link href="#infrastructure" className="transition-colors hover:text-white">Infrastructure</Link>
-            <Link href="/verify" className="flex items-center gap-1.5 text-[#00C2FF] transition-colors hover:text-white">
+            <Link href="/verify" className="flex items-center gap-1.5 text-[#00C2FF] transition-colors hover:text-white font-semibold">
               <Activity className="h-3.5 w-3.5" />
-              Explorer
+              Live Verify
             </Link>
           </nav>
 
@@ -103,7 +120,7 @@ export default function LandingPage() {
             </Link>
           </div>
 
-          {/* Mobile menu button */}
+          {/* Mobile menu toggle */}
           <button
             className="lg:hidden p-2 rounded-lg text-[#8F96A3] hover:text-white transition"
             onClick={() => setMobileNav(!mobileNav)}
@@ -112,12 +129,13 @@ export default function LandingPage() {
           </button>
         </div>
 
-        {/* Mobile Nav */}
+        {/* Mobile Drawer */}
         {mobileNav && (
           <div className="lg:hidden border-t border-[#1E2330] bg-[#07090E]/98 px-6 pb-6 pt-4 space-y-4 animate-fade-in-up">
             <Link href="#features" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Features</Link>
-            <Link href="#how-it-works" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>How It Works</Link>
-            <Link href="/verify" className="block text-[15px] text-[#00C2FF] hover:text-white py-2" onClick={() => setMobileNav(false)}>Explorer</Link>
+            <Link href="#explorer-section" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Explorer</Link>
+            <Link href="#institutional" className="block text-[15px] text-[#8F96A3] hover:text-white py-2" onClick={() => setMobileNav(false)}>Institutions</Link>
+            <Link href="/verify" className="block text-[15px] text-[#00C2FF] hover:text-white py-2" onClick={() => setMobileNav(false)}>Live Explorer</Link>
             <div className="pt-2 flex gap-3">
               <Link href="/login" className="flex-1">
                 <button className="w-full h-11 rounded-full border border-[#1E2330] text-[14px] font-semibold text-[#8F96A3] hover:text-white">
@@ -136,9 +154,9 @@ export default function LandingPage() {
 
       <main className="relative z-10 flex-1">
         {/* ========================================================================= */}
-        {/* HERO SECTION                                                             */}
+        {/* SECTION 1: HERO SECTION ("Be Your Own Certificate Authority")             */}
         {/* ========================================================================= */}
-        <section className="relative pt-16 pb-20 md:pt-24 md:pb-32">
+        <section className="relative pt-16 pb-20 md:pt-24 md:pb-28">
           <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
             <div className="grid gap-14 lg:grid-cols-12 items-center">
               
@@ -150,24 +168,24 @@ export default function LandingPage() {
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#00C2FF] opacity-75" />
                     <span className="relative inline-flex rounded-full h-2 w-2 bg-[#00C2FF]" />
                   </span>
-                  <span>global infrastructure platform for credentials</span>
+                  <span>The Global Infrastructure Platform for Credentials</span>
                 </div>
 
-                {/* Massive Headline (Blockchain.com "Invest like an icon" style) */}
+                {/* Massive Hero Title */}
                 <h1 className="text-[44px] sm:text-[64px] lg:text-[72px] font-[900] leading-[1.04] tracking-[-0.04em] text-white">
-                  Issue like <br />
+                  Be Your Own <br />
                   <span className="bg-gradient-to-r from-[#6916F5] via-[#00C2FF] to-[#A855F7] bg-clip-text text-transparent">
-                    an icon
+                    Certificate Authority
                   </span>
                   <span className="text-[#6916F5]">.</span>
                 </h1>
 
                 {/* Subtitle */}
                 <p className="max-w-[560px] text-[17px] sm:text-[19px] leading-[1.65] text-[#8F96A3] font-normal mx-auto lg:mx-0">
-                  We power credential authenticity for everyone: from students, to universities, to global institutions. Here for the future of digital trust.
+                  Issuing platform and on-chain Certificate Registry, all in one application. Issue, anchor, and verify tamper-proof academic degrees with mathematical certainty.
                 </p>
 
-                {/* Search Bar */}
+                {/* Instant Verification Search Bar */}
                 <form
                   onSubmit={handleHeroSearch}
                   className="max-w-[580px] mx-auto lg:mx-0 flex flex-col sm:flex-row gap-2 rounded-2xl sm:rounded-full border border-[#1E2330] bg-[#0E121B] p-2 shadow-2xl transition-all focus-within:border-[#6916F5]/60 focus-within:shadow-[0_0_30px_rgba(105,22,245,0.25)]"
@@ -176,7 +194,7 @@ export default function LandingPage() {
                     <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-[#5A6072]" />
                     <input
                       type="text"
-                      placeholder="Enter Certificate ID or Transaction Hash"
+                      placeholder="Enter Certificate ID or Tx Hash"
                       value={certInput}
                       onChange={(e) => setCertInput(e.target.value)}
                       className="w-full bg-transparent pl-11 pr-4 py-3.5 text-[14px] text-white placeholder:text-[#5A6072] focus:outline-none font-mono"
@@ -191,7 +209,7 @@ export default function LandingPage() {
                   </button>
                 </form>
 
-                {/* Trust Metrics */}
+                {/* Trust Badges */}
                 <div className="flex flex-wrap items-center justify-center lg:justify-start gap-6 text-[12px] text-[#5A6072] font-semibold pt-1">
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
@@ -199,7 +217,7 @@ export default function LandingPage() {
                   </span>
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
-                    Ethereum Sepolia Protocol
+                    Ethereum Sepolia Network
                   </span>
                   <span className="flex items-center gap-1.5">
                     <CheckCircle2 className="h-3.5 w-3.5 text-[#00D26A]" />
@@ -208,11 +226,10 @@ export default function LandingPage() {
                 </div>
               </div>
 
-              {/* Right Column: Live On-Chain Visualizer Card */}
+              {/* Right Column: Live Terminal Visualizer Card */}
               <div className="lg:col-span-5 relative">
                 <div className="relative rounded-3xl border border-[#1E2330] bg-gradient-to-b from-[#0E121B] to-[#07090E] p-7 shadow-2xl animate-float">
-                  
-                  {/* Card Header */}
+                  {/* Terminal Header */}
                   <div className="flex items-center justify-between border-b border-[#1E2330] pb-4 mb-5">
                     <div className="flex items-center gap-2">
                       <div className="h-2.5 w-2.5 rounded-full bg-[#FF5F57]" />
@@ -241,7 +258,7 @@ export default function LandingPage() {
                         <p className="text-white font-semibold truncate mt-0.5 text-[12px]">Dr. Alex Rivera</p>
                       </div>
                       <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Degree / Course</span>
+                        <span className="text-[10px] text-[#5A6072]">Degree / Program</span>
                         <p className="text-white font-semibold truncate mt-0.5 text-[12px]">Quantum AI</p>
                       </div>
                     </div>
@@ -255,7 +272,7 @@ export default function LandingPage() {
 
                     <div className="grid grid-cols-2 gap-3 text-[11px]">
                       <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
-                        <span className="text-[10px] text-[#5A6072]">Network</span>
+                        <span className="text-[10px] text-[#5A6072]">Active Network</span>
                         <p className="text-[#B89DFF] font-semibold mt-0.5 text-[12px]">Sepolia EVM</p>
                       </div>
                       <div className="rounded-xl bg-[#07090E] p-3 border border-[#1E2330]">
@@ -265,7 +282,7 @@ export default function LandingPage() {
                     </div>
                   </div>
 
-                  {/* QR Scan Explorer Action */}
+                  {/* QR Action Footer */}
                   <div className="mt-5 pt-4 border-t border-[#1E2330] flex items-center justify-between text-[12px]">
                     <div className="flex items-center gap-2 text-[#5A6072]">
                       <QrCode className="h-4 w-4 text-[#6916F5]" />
@@ -275,7 +292,7 @@ export default function LandingPage() {
                       href="/verify"
                       className="text-[#6916F5] hover:text-[#B89DFF] font-bold inline-flex items-center gap-1 transition"
                     >
-                      Open Explorer
+                      Open Live Explorer
                       <ArrowUpRight className="h-3.5 w-3.5" />
                     </Link>
                   </div>
@@ -287,44 +304,41 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* STATS TICKER STRIP                                                        */}
+        {/* SECTION 2: PROTOCOL & ASSET MARQUEE (Matches Blockchain.com Asset Ticker)  */}
         {/* ========================================================================= */}
-        <section className="border-y border-[#1E2330] bg-[#0A0D14]/80 py-10 backdrop-blur-sm">
-          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
-              {[
-                { value: '0.0%', label: 'Fraud Rate', color: 'text-white' },
-                { value: '100%', label: 'On-Chain Consensus', color: 'text-[#00C2FF]' },
-                { value: '< 1.0s', label: 'Verification Latency', color: 'text-white' },
-                { value: '256-Bit', label: 'SHA Proof', color: 'text-[#B89DFF]' },
-              ].map((stat, i) => (
-                <div key={i} className="space-y-1">
-                  <p className={`text-[36px] sm:text-[44px] font-[900] tracking-[-0.03em] ${stat.color}`}>
-                    {stat.value}
-                  </p>
-                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#5A6072] font-semibold">{stat.label}</p>
-                </div>
-              ))}
-            </div>
+        <section className="border-y border-[#1E2330] bg-[#0A0D14]/90 py-6 overflow-hidden">
+          <div className="flex animate-marquee gap-8 items-center">
+            {[...marqueeItems, ...marqueeItems].map((item, idx) => (
+              <div
+                key={idx}
+                className="flex items-center gap-3 rounded-full border border-[#1E2330] bg-[#0E121B] px-5 py-2.5 shrink-0"
+              >
+                <div
+                  className="h-2.5 w-2.5 rounded-full"
+                  style={{ backgroundColor: item.color }}
+                />
+                <span className="text-sm font-bold text-white">{item.name}</span>
+                <span className="text-xs text-[#5A6072] font-mono">{item.tag}</span>
+              </div>
+            ))}
           </div>
         </section>
 
         {/* ========================================================================= */}
-        {/* BENTO GRID FEATURE SUITE                                                  */}
+        {/* SECTION 3: PRODUCT SUITE ("The world's most trusted credential platform") */}
         {/* ========================================================================= */}
         <section id="features" className="py-24 lg:py-32 relative">
           <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
-            {/* Section Header */}
-            <div className="text-center max-w-[640px] mx-auto mb-16 lg:mb-20 space-y-4">
+            <div className="text-center max-w-[680px] mx-auto mb-16 lg:mb-20 space-y-4">
               <div className="inline-flex items-center gap-2 rounded-full border border-[#6916F5]/25 bg-[#6916F5]/10 px-4 py-1 text-[11px] font-semibold text-[#B89DFF] uppercase tracking-widest">
                 <Sparkles className="h-3.5 w-3.5" />
-                Enterprise Infrastructure
+                Enterprise Issuing Suite
               </div>
               <h2 className="text-[34px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
-                Everything to issue credentials with certainty.
+                The world&apos;s most trusted credential platform.
               </h2>
               <p className="text-[#8F96A3] text-[17px] leading-relaxed">
-                Engineered for universities, professional accreditors, and global training institutions.
+                Our powerful issuing suite and integrated Ethereum smart contract registry give you complete authority over tamper-proof credentials.
               </p>
             </div>
 
@@ -333,8 +347,8 @@ export default function LandingPage() {
               {/* Feature 1: Large Span */}
               <div className="md:col-span-2 group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 sm:p-10 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
                 <div className="space-y-4">
-                  <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[#6916F5]/15 text-[#B89DFF] border border-[#6916F5]/30 p-3 w-fit">
-                    <Lock className="h-7 w-7" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#6916F5]/15 text-[#B89DFF] border border-[#6916F5]/30">
+                    <Lock className="h-6 w-6" />
                   </div>
                   <h3 className="text-[26px] sm:text-[30px] font-[900] text-white tracking-[-0.02em]">
                     Immutable Smart Contract Registry
@@ -355,8 +369,8 @@ export default function LandingPage() {
               {/* Feature 2: High Bento */}
               <div className="group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
                 <div className="space-y-4">
-                  <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[#00C2FF]/15 text-[#00C2FF] border border-[#00C2FF]/30 p-3 w-fit">
-                    <QrCode className="h-7 w-7" />
+                  <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#00C2FF]/15 text-[#00C2FF] border border-[#00C2FF]/30">
+                    <QrCode className="h-6 w-6" />
                   </div>
                   <h3 className="text-[22px] font-[900] text-white tracking-[-0.02em]">
                     Camera QR Scanner
@@ -373,9 +387,9 @@ export default function LandingPage() {
 
               {/* Row of 3 Cards */}
               {[
-                { icon: FileCheck2, title: 'Dynamic PDF Engine', desc: 'Vector PDFs generated on-the-fly with intelligent dynamic font scaling, ensuring names fit symmetrically.' },
-                { icon: Zap, title: 'Supabase PostgreSQL', desc: 'Encrypted metadata cached with transaction poolers delivering sub-second queries and zero cold starts.' },
-                { icon: Fingerprint, title: 'On-Chain Revocation', desc: 'Granular revocation authority allowing institutions to invalidate credentials with reason codes on-chain.' },
+                { icon: FileCheck2, title: 'Dynamic PDF Engine', desc: 'Vector PDFs generated on-the-fly with intelligent dynamic font scaling, ensuring long graduate names and courses fit symmetrically.' },
+                { icon: Zap, title: 'Supabase PostgreSQL', desc: 'Encrypted metadata cached with transaction poolers delivering sub-second queries, instant search, and zero cold starts.' },
+                { icon: Fingerprint, title: 'On-Chain Revocation', desc: 'Granular revocation authority allowing institutions to invalidate credentials with reason codes recorded permanently.' },
               ].map((f, i) => (
                 <div key={i} className="group rounded-3xl border border-[#1E2330] bg-[#0E121B] p-7 flex flex-col justify-between transition-all duration-300 hover:border-[#6916F5]/50 hover:shadow-[0_0_40px_rgba(105,22,245,0.12)]">
                   <div className="space-y-3.5">
@@ -392,9 +406,277 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* PROTOCOL WORKFLOW                                                         */}
+        {/* SECTION 4: TRUST & MILESTONE CARDS ("Cryptoing since genesis")            */}
         {/* ========================================================================= */}
-        <section id="how-it-works" className="py-24 border-t border-[#1E2330] bg-[#07090E]">
+        <section className="py-20 border-t border-[#1E2330] bg-[#0A0D14]/80">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#B89DFF]">Origin</span>
+                <p className="text-3xl font-[900] text-white">Built on Ethereum</p>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  Decentralized cryptographic proofs anchored directly to Ethereum ledger blocks without reliance on any proprietary server.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#00D26A]">Integrity</span>
+                <p className="text-3xl font-[900] text-white">Security First</p>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  0% counterfeit rate. Deterministic SHA-256 signatures ensure certificates cannot be modified once mined.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <span className="text-xs font-bold uppercase tracking-widest text-[#00C2FF]">Scale</span>
+                <p className="text-3xl font-[900] text-white">Institutional Scale</p>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  Designed for high-throughput batch credential minting, instant PDF generation, and automated recipient notifications.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 5 & 6: INTERACTIVE BLOCKCHAIN EXPLORER SANDBOX                   */}
+        {/* ========================================================================= */}
+        <section id="explorer-section" className="py-24 border-t border-[#1E2330] bg-[#07090E]">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+            <div className="grid gap-12 lg:grid-cols-12 items-center">
+              
+              {/* Left text */}
+              <div className="lg:col-span-5 space-y-6">
+                <div className="inline-flex items-center gap-2 rounded-full border border-[#00C2FF]/30 bg-[#00C2FF]/10 px-4 py-1 text-xs font-semibold text-[#00C2FF]">
+                  <Activity className="h-3.5 w-3.5" />
+                  Public Ledger Explorer
+                </div>
+                <h2 className="text-[34px] sm:text-[44px] font-[900] tracking-[-0.03em] text-white leading-[1.1]">
+                  Pioneering public credential verification.
+                </h2>
+                <p className="text-[#8F96A3] text-[16px] leading-relaxed">
+                  Search, inspect, and verify the cryptographic state of any degree, issuer authority, or transaction hash in real-time.
+                </p>
+                <div className="pt-2">
+                  <Link href="/verify">
+                    <Button className="bg-[#6916F5] hover:bg-[#7C3AED] text-white font-bold rounded-full px-6 shadow-lg shadow-[#6916F5]/30">
+                      Launch Full Explorer Portal &rarr;
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+
+              {/* Right interactive explorer box */}
+              <div className="lg:col-span-7">
+                <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-6 shadow-2xl">
+                  {/* Explorer Nav Tabs */}
+                  <div className="flex items-center justify-between border-b border-[#1E2330] pb-4 mb-6">
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => setActiveTab('cert')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
+                          activeTab === 'cert' ? 'bg-[#6916F5] text-white' : 'text-[#8F96A3] hover:text-white'
+                        }`}
+                      >
+                        Latest Verified Credentials
+                      </button>
+                      <button
+                        onClick={() => setActiveTab('contract')}
+                        className={`text-xs font-bold px-3 py-1.5 rounded-lg transition ${
+                          activeTab === 'contract' ? 'bg-[#6916F5] text-white' : 'text-[#8F96A3] hover:text-white'
+                        }`}
+                      >
+                        Smart Contract State
+                      </button>
+                    </div>
+                    <span className="text-[11px] font-mono text-emerald-400 flex items-center gap-1.5">
+                      <span className="h-2 w-2 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Feed
+                    </span>
+                  </div>
+
+                  {/* Tab 1: Live Feed List */}
+                  {activeTab === 'cert' ? (
+                    <div className="space-y-3 font-mono text-xs">
+                      {[
+                        { id: 'CERT-2026-OXF942K', recipient: 'Dr. Alex Rivera', course: 'Quantum Computing & AI', time: '12s ago', status: 'VALID' },
+                        { id: 'CERT-2026-CAM819J', recipient: 'Elena Rostova', course: 'Distributed Cryptography', time: '1m ago', status: 'VALID' },
+                        { id: 'CERT-2026-MIT503X', recipient: 'Marcus Vance', course: 'Smart Contract Architecture', time: '3m ago', status: 'VALID' },
+                      ].map((item, i) => (
+                        <div key={i} className="flex items-center justify-between p-3.5 rounded-xl bg-[#07090E] border border-[#1E2330] hover:border-[#6916F5]/40 transition">
+                          <div>
+                            <span className="font-bold text-[#00C2FF]">{item.id}</span>
+                            <p className="text-[#8F96A3] text-[11px] mt-0.5">{item.recipient} • {item.course}</p>
+                          </div>
+                          <div className="text-right">
+                            <span className="inline-block px-2 py-0.5 rounded bg-[#00D26A]/10 text-[#00D26A] text-[10px] font-bold">
+                              {item.status}
+                            </span>
+                            <p className="text-[10px] text-[#5A6072] mt-0.5">{item.time}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="space-y-3 font-mono text-xs">
+                      <div className="p-3.5 rounded-xl bg-[#07090E] border border-[#1E2330]">
+                        <span className="text-[#5A6072] text-[10px]">Contract Registry Address</span>
+                        <p className="text-[#B89DFF] text-[11px] break-all font-bold mt-0.5">
+                          0x5FbDB2315678afecb367f032d93F642f64180aa3
+                        </p>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3">
+                        <div className="p-3 rounded-xl bg-[#07090E] border border-[#1E2330]">
+                          <span className="text-[#5A6072] text-[10px]">Active Network</span>
+                          <p className="text-white font-bold mt-0.5">Sepolia EVM</p>
+                        </div>
+                        <div className="p-3 rounded-xl bg-[#07090E] border border-[#1E2330]">
+                          <span className="text-[#5A6072] text-[10px]">Solidity Compiler</span>
+                          <p className="text-white font-bold mt-0.5">0.8.20 (Cancun)</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 7: FOR INSTITUTIONS & BUSINESS                                    */}
+        {/* ========================================================================= */}
+        <section id="institutional" className="py-24 border-t border-[#1E2330] bg-[#0A0D14]/70">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+            <div className="text-center max-w-[640px] mx-auto mb-16 space-y-4">
+              <div className="inline-flex items-center gap-2 rounded-full border border-[#6916F5]/25 bg-[#6916F5]/10 px-4 py-1 text-[11px] font-semibold text-[#B89DFF] uppercase tracking-widest">
+                <Building2 className="h-3.5 w-3.5" />
+                Enterprise Accreditation
+              </div>
+              <h2 className="text-[34px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
+                For universities & accreditors.
+              </h2>
+              <p className="text-[#8F96A3] text-[17px] leading-relaxed">
+                From universities to state boards, academies to corporate accreditors, we facilitate best-in-class infrastructure for digital credentials.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#6916F5]/20 text-[#B89DFF] flex items-center justify-center font-bold">
+                  01
+                </div>
+                <h3 className="text-xl font-bold text-white">Batch Credential Minting</h3>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  Upload CSV records and anchor thousands of degrees in a single gas-optimized Ethereum block transaction.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#00C2FF]/20 text-[#00C2FF] flex items-center justify-center font-bold">
+                  02
+                </div>
+                <h3 className="text-xl font-bold text-white">Automated SMTP Dispatch</h3>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  Automatic email delivery with high-resolution PDF attachments and embedded QR verification codes sent to graduates.
+                </p>
+              </div>
+
+              <div className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-8 space-y-4">
+                <div className="h-10 w-10 rounded-xl bg-[#00D26A]/20 text-[#00D26A] flex items-center justify-center font-bold">
+                  03
+                </div>
+                <h3 className="text-xl font-bold text-white">Multi-Admin Access</h3>
+                <p className="text-sm text-[#8F96A3] leading-relaxed">
+                  Role-based access control via Supabase Auth and cryptographic keys, safeguarding institution issuing privileges.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 8: STATS TICKER STRIP                                            */}
+        {/* ========================================================================= */}
+        <section className="border-y border-[#1E2330] bg-[#07090E] py-12">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 text-center">
+              {[
+                { value: '0.0%', label: 'Fraud & Forgery Rate', color: 'text-white' },
+                { value: '100%', label: 'On-Chain Consensus', color: 'text-[#00C2FF]' },
+                { value: '< 1.0s', label: 'Verification Latency', color: 'text-white' },
+                { value: '256-Bit', label: 'SHA Proof', color: 'text-[#B89DFF]' },
+              ].map((stat, i) => (
+                <div key={i} className="space-y-1">
+                  <p className={`text-[36px] sm:text-[44px] font-[900] tracking-[-0.03em] ${stat.color}`}>
+                    {stat.value}
+                  </p>
+                  <p className="text-[11px] uppercase tracking-[0.14em] text-[#5A6072] font-semibold">{stat.label}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 9: TRUSTED BY LEADING INSTITUTIONS                                */}
+        {/* ========================================================================= */}
+        <section className="py-20 bg-[#0A0D14]/80">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8 text-center space-y-8">
+            <h3 className="text-xs font-bold uppercase tracking-widest text-[#5A6072]">
+              Trusted by Leading Educational Institutions & Open Standards
+            </h3>
+            <div className="flex flex-wrap items-center justify-center gap-10 opacity-70 grayscale hover:grayscale-0 transition-all">
+              <span className="text-lg font-extrabold tracking-tight text-slate-300">OXFORD ACADEMIA</span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-300">CAMBRIDGE REGISTRY</span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-300">OPENZEPPELIN</span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-300">ETHEREUM FOUNDATION</span>
+              <span className="text-lg font-extrabold tracking-tight text-slate-300">SUPABASE POSTGRES</span>
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 10: LATEST INSIGHTS & RESEARCH                                    */}
+        {/* ========================================================================= */}
+        <section className="py-24 border-t border-[#1E2330] bg-[#07090E]">
+          <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
+            <div className="flex flex-col md:flex-row items-start md:items-end justify-between mb-16 gap-4">
+              <div>
+                <h2 className="text-xs font-bold uppercase tracking-widest text-[#B89DFF] mb-2">Research & Standards</h2>
+                <p className="text-[32px] font-[900] tracking-tight text-white">What&apos;s happening in verifiable credentials</p>
+              </div>
+              <Link href="/verify" className="text-sm font-semibold text-[#00C2FF] hover:underline inline-flex items-center gap-1">
+                Explore research papers &rarr;
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {[
+                { title: 'The End of Diploma Mills: How Smart Contracts Guarantee Authenticity', date: 'Aug 2026', tag: 'Security' },
+                { title: 'Deterministic SHA-256 vs Merkle Roots in High-Throughput Accreditation', date: 'Aug 2026', tag: 'Architecture' },
+                { title: 'Decentralized Identifiers (DIDs) & W3C Verifiable Credentials on EVM', date: 'Jul 2026', tag: 'Standards' },
+              ].map((art, i) => (
+                <div key={i} className="rounded-3xl border border-[#1E2330] bg-[#0E121B] p-7 space-y-4 hover:border-[#6916F5]/50 transition">
+                  <div className="flex items-center justify-between text-xs text-[#5A6072]">
+                    <span className="font-mono text-[#00C2FF]">{art.tag}</span>
+                    <span>{art.date}</span>
+                  </div>
+                  <h3 className="text-lg font-bold text-white leading-snug">{art.title}</h3>
+                  <p className="text-xs text-[#8F96A3]">
+                    Deep dive into how decentralized consensus eliminates counterfeit documents permanently.
+                  </p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ========================================================================= */}
+        {/* SECTION 11: HOW IT WORKS / LIFECYCLE WORKFLOW                             */}
+        {/* ========================================================================= */}
+        <section id="how-it-works" className="py-24 border-t border-[#1E2330] bg-[#0A0D14]">
           <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
             <div className="text-center max-w-[560px] mx-auto mb-16 space-y-3">
               <h2 className="text-[11px] font-bold uppercase tracking-[0.15em] text-[#B89DFF]">
@@ -427,27 +709,27 @@ export default function LandingPage() {
         </section>
 
         {/* ========================================================================= */}
-        {/* HIGH-IMPACT CTA BANNER                                                    */}
+        {/* SECTION 12: FINAL HIGH-IMPACT CTA ("Issue like an icon")                  */}
         {/* ========================================================================= */}
         <section className="py-24 relative">
           <div className="container mx-auto max-w-[960px] px-6 sm:px-8">
             <div className="relative rounded-3xl border border-[#6916F5]/40 bg-gradient-to-br from-[#6916F5]/20 via-[#0E121B] to-[#00C2FF]/10 p-10 md:p-16 text-center shadow-[0_20px_60px_rgba(105,22,245,0.25)] backdrop-blur-2xl">
               <div className="relative z-10 mx-auto max-w-[580px] space-y-6">
-                <h2 className="text-[32px] sm:text-[44px] font-[900] tracking-[-0.03em] text-white leading-[1.1]">
-                  Ready to anchor credentials on Ethereum?
+                <h2 className="text-[36px] sm:text-[48px] font-[900] tracking-[-0.03em] text-white leading-[1.08]">
+                  Issue like an icon<span className="text-[#6916F5]">.</span>
                 </h2>
                 <p className="text-[#8F96A3] text-[16px] leading-relaxed">
-                  Join universities and accreditation bodies issuing blockchain-backed credentials with mathematical certainty.
+                  Join leading universities and accredited training organizations issuing blockchain-backed credentials today.
                 </p>
                 <div className="flex flex-col sm:flex-row justify-center gap-3 pt-3">
                   <Link href="/register">
                     <button className="w-full sm:w-auto h-12 px-8 rounded-full bg-[#6916F5] hover:bg-[#7C3AED] text-[15px] font-bold text-white shadow-[0_0_28px_rgba(105,22,245,0.4)] transition-all hover:scale-105 active:scale-95">
-                      Create Issuer Account
+                      Get Started Free
                     </button>
                   </Link>
                   <Link href="/verify">
                     <button className="w-full sm:w-auto h-12 px-8 rounded-full border border-[#1E2330] bg-[#0E121B] text-[15px] font-semibold text-white hover:bg-[#131822] transition-all">
-                      Open Verification Portal
+                      Verify Credential
                     </button>
                   </Link>
                 </div>
@@ -469,7 +751,7 @@ export default function LandingPage() {
                 <span className="text-[20px] font-[900] text-white tracking-[-0.02em]">Citadel</span>
               </div>
               <p className="text-[12px] text-[#5A6072] max-w-[320px] leading-relaxed">
-                The institutional standard for blockchain-anchored digital credentials. Powered by Ethereum, Supabase, and Ethers.js.
+                The global infrastructure platform for blockchain-anchored credentials. Powered by Ethereum, Supabase, and Ethers.js.
               </p>
             </div>
 
