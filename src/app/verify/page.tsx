@@ -114,9 +114,9 @@ export default function VerifyEntryPage() {
             <span>Back to Home</span>
           </Link>
 
-          <Link href="/" className="flex items-center gap-3">
-            <CitadelLogo className="h-11 w-11" />
-            <span className="text-xl font-bold tracking-tight text-slate-900">
+          <Link href="/" className="flex items-center gap-3.5 transition hover:opacity-90">
+            <CitadelLogo className="h-12 w-12" size={64} />
+            <span className="text-2xl font-[900] tracking-tight text-slate-900">
               Citadel
             </span>
           </Link>

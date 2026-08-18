@@ -90,9 +90,9 @@ export default function LandingPage() {
       >
         <div className="container mx-auto flex h-20 max-w-[1240px] items-center justify-between px-6 sm:px-8">
           {/* Logo */}
-          <Link href="/" className="flex items-center gap-3 transition hover:opacity-90">
-            <CitadelLogo className="h-9 w-9" />
-            <span className="text-[22px] font-[900] tracking-[-0.03em] text-white">
+          <Link href="/" className="flex items-center gap-3.5 transition hover:opacity-90">
+            <CitadelLogo className="h-12 w-12" size={64} />
+            <span className="text-[26px] font-[900] tracking-[-0.03em] text-white">
               Citadel
             </span>
           </Link>
@@ -585,9 +585,9 @@ export default function LandingPage() {
         <div className="container mx-auto max-w-[1240px] px-6 sm:px-8">
           <div className="grid grid-cols-2 md:grid-cols-5 gap-8 pb-14 border-b border-[#1A1A1A]">
             <div className="col-span-2 space-y-4">
-              <div className="flex items-center gap-3">
-                <CitadelLogo className="h-8 w-8" />
-                <span className="text-[20px] font-[900] text-white tracking-tight">Citadel</span>
+              <div className="flex items-center gap-3.5">
+                <CitadelLogo className="h-11 w-11" size={56} />
+                <span className="text-[24px] font-[900] text-white tracking-tight">Citadel</span>
               </div>
               <p className="text-[12px] text-[#666666] max-w-[300px] leading-relaxed">
                 The modern blockchain platform for issuing and verifying tamper-proof academic and professional certificates.
