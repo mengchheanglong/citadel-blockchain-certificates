@@ -2,28 +2,90 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================================================
+   CITADEL DESIGN SYSTEM — FOUNDATION
+   A restrained, institutional design language for a credentialing authority.
+   Every colour, radius, shadow and motion value in the product resolves to a
+   token declared here. Components never hardcode a hex value.
+   ========================================================================= */
+
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
-    --primary: 350 85% 42%;
-    --primary-foreground: 210 40% 98%;
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 350 85% 42%;
-    --radius: 0.5rem;
+    /* --- Brand: Citadel Burgundy -------------------------------------- */
+    --brand: 350 85% 42%;          /* #C8102E  primary actions, accents     */
+    --brand-strong: 347 71% 36%;   /* #9E1B32  hover / pressed              */
+    --brand-deep: 348 63% 22%;     /* deep garnet, headings on brand fields */
+    --brand-soft: 350 80% 96%;     /* tinted chip background                */
+    --brand-line: 350 60% 88%;     /* tinted chip border                    */
+    --brand-foreground: 0 0% 100%;
+
+    /* --- Neutrals: paper & ink ---------------------------------------- */
+    --canvas: 210 33% 98%;         /* application background                */
+    --surface: 0 0% 100%;          /* cards, sheets, menus                  */
+    --surface-muted: 210 33% 97%;  /* table headers, inset panels           */
+    --surface-sunken: 214 32% 94%; /* wells, skeletons                      */
+
+    --ink: 222 47% 11%;            /* primary text                          */
+    --ink-secondary: 215 25% 27%;  /* secondary text                        */
+    --ink-muted: 215 16% 47%;      /* supporting text, labels               */
+    --ink-subtle: 214 16% 62%;     /* placeholders, disabled                */
+    --ink-inverse: 0 0% 100%;
+
+    --line: 214 32% 91%;           /* default hairline                      */
+    --line-strong: 214 22% 84%;    /* emphasised divider, input border      */
+
+    /* --- Status: credential lifecycle --------------------------------- */
+    --success: 160 84% 31%;
+    --success-fg: 162 88% 24%;
+    --success-soft: 152 76% 96%;
+    --success-line: 152 60% 84%;
+
+    --warning: 32 95% 44%;
+    --warning-fg: 26 90% 37%;
+    --warning-soft: 48 96% 95%;
+    --warning-line: 45 90% 80%;
+
+    --danger: 0 72% 51%;
+    --danger-fg: 0 74% 42%;
+    --danger-soft: 0 86% 97%;
+    --danger-line: 0 80% 89%;
+
+    --info: 217 91% 45%;
+    --info-fg: 221 83% 38%;
+    --info-soft: 214 100% 97%;
+    --info-line: 213 90% 87%;
+
+    /* --- shadcn compatibility layer ----------------------------------- */
+    --background: var(--canvas);
+    --foreground: var(--ink);
+    --card: var(--surface);
+    --card-foreground: var(--ink);
+    --popover: var(--surface);
+    --popover-foreground: var(--ink);
+    --primary: var(--brand);
+    --primary-foreground: var(--brand-foreground);
+    --secondary: var(--surface-muted);
+    --secondary-foreground: var(--ink-secondary);
+    --muted: var(--surface-muted);
+    --muted-foreground: var(--ink-muted);
+    --accent: var(--surface-muted);
+    --accent-foreground: var(--ink);
+    --destructive: var(--danger);
+    --destructive-foreground: 0 0% 100%;
+    --border: var(--line);
+    --input: var(--line-strong);
+    --ring: var(--brand);
+
+    /* --- Geometry ------------------------------------------------------ */
+    --radius: 0.625rem;
+
+    /* --- Elevation ----------------------------------------------------- */
+    --shadow-2xs: 0 1px 1px 0 hsl(222 47% 11% / 0.03);
+    --shadow-xs: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
+    --shadow-sm: 0 1px 3px 0 hsl(222 47% 11% / 0.06), 0 1px 2px -1px hsl(222 47% 11% / 0.05);
+    --shadow-md: 0 4px 12px -2px hsl(222 47% 11% / 0.08), 0 2px 4px -2px hsl(222 47% 11% / 0.04);
+    --shadow-lg: 0 12px 32px -8px hsl(222 47% 11% / 0.14), 0 4px 8px -4px hsl(222 47% 11% / 0.06);
+    --shadow-xl: 0 24px 56px -16px hsl(222 47% 11% / 0.2), 0 8px 16px -8px hsl(222 47% 11% / 0.08);
   }
 }
 
@@ -31,141 +93,305 @@
   * {
     @apply border-border;
   }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
-    @apply bg-background text-foreground;
-    font-feature-settings: 'liga' 1, 'calt' 1;
+    @apply bg-canvas text-ink;
+    font-family: var(--font-sans), ui-sans-serif, system-ui, -apple-system, Segoe UI, sans-serif;
+    font-feature-settings: "liga" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Numerals in tables, ledgers and metadata must align vertically. */
+  table,
+  [data-tabular] {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* One focus treatment across the entire product. */
+  :focus-visible {
+    outline: 2px solid hsl(var(--brand));
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+
+  ::selection {
+    background: hsl(var(--brand));
+    color: hsl(var(--brand-foreground));
+  }
+
+  ::placeholder {
+    color: hsl(var(--ink-subtle));
   }
 }
 
-/* Marquee continuous horizontal loop */
-@keyframes marquee {
-  0% {
-    transform: translateX(0%);
+@layer components {
+  /* Section eyebrow — small uppercase label above a heading. */
+  .eyebrow {
+    @apply text-[11px] font-semibold uppercase tracking-[0.14em] text-ink-muted;
   }
-  100% {
+
+  /* Monospace metadata: hashes, certificate IDs, contract addresses. */
+  .metadata {
+    font-family: var(--font-mono), ui-monospace, SFMono-Regular, monospace;
+    font-size: 12.5px;
+    letter-spacing: -0.01em;
+  }
+
+  /* Engraved guilloché texture for certificate artwork. */
+  .guilloche {
+    background-image:
+      repeating-linear-gradient(45deg, hsl(var(--brand) / 0.05) 0 1px, transparent 1px 7px),
+      repeating-linear-gradient(-45deg, hsl(var(--brand) / 0.05) 0 1px, transparent 1px 7px);
+  }
+
+  /* Subtle grid used behind hero and empty-state artwork. */
+  .grid-texture {
+    background-image:
+      linear-gradient(to right, hsl(var(--line) / 0.7) 1px, transparent 1px),
+      linear-gradient(to bottom, hsl(var(--line) / 0.7) 1px, transparent 1px);
+    background-size: 44px 44px;
+  }
+}
+
+@layer utilities {
+  /* Marquee used by the landing page capability rail. */
+  .marquee-track {
+    display: flex;
+    width: max-content;
+    animation: marquee 42s linear infinite;
+  }
+  .marquee-track:hover {
+    animation-play-state: paused;
+  }
+
+  /* Edge fade for horizontally scrolling rails. */
+  .mask-edges {
+    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+    mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
+  }
+
+  /* Second rail, travelling the other way, so the two read as one field. */
+  .marquee-track--reverse {
+    animation-name: marquee-reverse;
+  }
+
+  .shimmer {
+    background-image: linear-gradient(90deg, transparent 0%, hsl(0 0% 100% / 0.65) 50%, transparent 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.6s ease-in-out infinite;
+  }
+
+  /* --------------------------------------------------------------------
+     Rotating caption — one line of type that swaps itself out, used in
+     the landing hero to name each audience in turn.
+     ------------------------------------------------------------------ */
+  .rotator {
+    position: relative;
+    display: block;
+    height: 1.45em;
+    overflow: hidden;
+  }
+  .rotator__line {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    white-space: nowrap;
+    will-change: transform, opacity, filter;
+    transition:
+      transform 900ms cubic-bezier(0.22, 1, 0.36, 1),
+      opacity 700ms cubic-bezier(0.4, 0, 0.2, 1),
+      filter 700ms cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .rotator__line[data-state="below"] {
+    transform: translateY(70%);
+    opacity: 0;
+    filter: blur(8px);
+  }
+  .rotator__line[data-state="current"] {
+    transform: translateY(0);
+    opacity: 1;
+    filter: blur(0);
+  }
+  .rotator__line[data-state="above"] {
+    transform: translateY(-70%);
+    opacity: 0;
+    filter: blur(8px);
+  }
+
+  /* --------------------------------------------------------------------
+     Aurora — two slow-drifting blurred fields behind the hero stage.
+     Cheaper than a canvas and it respects reduced-motion for free.
+     ------------------------------------------------------------------ */
+  .aurora::before,
+  .aurora::after {
+    content: "";
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    pointer-events: none;
+  }
+  .aurora::before {
+    inset: -20% 30% 40% -20%;
+    background: hsl(var(--brand) / 0.55);
+    animation: drift-a 18s ease-in-out infinite alternate;
+  }
+  .aurora::after {
+    inset: 35% -15% -25% 25%;
+    background: hsl(var(--brand-strong) / 0.4);
+    animation: drift-b 22s ease-in-out infinite alternate;
+  }
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
     transform: translateX(-50%);
   }
 }
 
-.animate-marquee {
-  display: flex;
-  width: max-content;
-  animation: marquee 28s linear infinite;
+@keyframes marquee-reverse {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 
-.animate-marquee:hover {
-  animation-play-state: paused;
+@keyframes drift-a {
+  from {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.55;
+  }
+  to {
+    transform: translate3d(12%, 8%, 0) scale(1.15);
+    opacity: 0.8;
+  }
 }
 
-/* Custom Blockchain.com Animations & Keyframes */
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-12px); }
+@keyframes drift-b {
+  from {
+    transform: translate3d(0, 0, 0) scale(1.1);
+    opacity: 0.45;
+  }
+  to {
+    transform: translate3d(-14%, -10%, 0) scale(0.95);
+    opacity: 0.7;
+  }
 }
 
-/* Ambient background glow breathing */
-@keyframes glowPulse {
-  0%, 100% { opacity: 0.35; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(1.06); }
-}
-
-/* Horizontal shimmer sweep for skeleton/loading states */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 
-/* Subtle scale-up entrance */
-@keyframes fadeInUp {
-  0% { opacity: 0; transform: translateY(24px); }
-  100% { opacity: 1; transform: translateY(0); }
+/* ---------------------------------------------------------------------------
+   Scrollbars — light, unobtrusive, matching the application surface.
+   ------------------------------------------------------------------------ */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--line-strong)) transparent;
 }
 
-/* Ticker/counter number count-up feel */
-@keyframes countUp {
-  0% { opacity: 0; transform: translateY(16px); }
-  100% { opacity: 1; transform: translateY(0); }
+/* The marketing surface is near-black, where a pale thin bar tuned for the
+   application's paper surfaces reads as a bright stripe down the edge. Hand
+   the page back to the browser's own scrollbar and tell it the surface is
+   dark, so it draws the standard dark one the rest of the OS uses. */
+:root:has([data-surface="marketing"]),
+:root:has([data-surface="marketing"]) * {
+  color-scheme: dark;
+  scrollbar-width: auto;
+  scrollbar-color: auto;
+}
+/* Chrome 121+ ignores these once scrollbar-color is set; kept for older
+   engines, and held off the marketing surface for the same reason as above. */
+:root:not(:has([data-surface="marketing"])) ::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+:root:not(:has([data-surface="marketing"])) ::-webkit-scrollbar-track {
+  background: transparent;
+}
+:root:not(:has([data-surface="marketing"])) ::-webkit-scrollbar-thumb {
+  background: hsl(var(--line-strong));
+  border: 3px solid transparent;
+  background-clip: content-box;
+  border-radius: 999px;
+}
+:root:not(:has([data-surface="marketing"])) ::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--ink-subtle));
+  background-clip: content-box;
 }
 
-/* Slide in from left for staggered feature cards */
-@keyframes slideInLeft {
-  0% { opacity: 0; transform: translateX(-32px); }
-  100% { opacity: 1; transform: translateX(0); }
+/* ---------------------------------------------------------------------------
+   QR scanner — html5-qrcode injects unstyled markup; bring it into the system.
+   ------------------------------------------------------------------------ */
+#qr-reader {
+  border: 0 !important;
+}
+#qr-reader__dashboard_section_csr button {
+  background: hsl(var(--brand)) !important;
+  color: hsl(var(--brand-foreground)) !important;
+  border: 0 !important;
+  border-radius: calc(var(--radius) - 2px) !important;
+  padding: 8px 14px !important;
+  font-size: 13px !important;
+  font-weight: 500 !important;
+  cursor: pointer;
+}
+#qr-reader__dashboard_section_csr span,
+#qr-reader__status_span {
+  font-size: 12px !important;
+  color: hsl(var(--ink-muted)) !important;
+}
+#qr-reader img[alt="Info icon"] {
+  display: none !important;
+}
+#qr-reader video {
+  border-radius: calc(var(--radius) - 2px);
 }
 
-/* Slide in from right */
-@keyframes slideInRight {
-  0% { opacity: 0; transform: translateX(32px); }
-  100% { opacity: 1; transform: translateX(0); }
+/* ---------------------------------------------------------------------------
+   Accessibility — respect the operating system's motion preference.
+   ------------------------------------------------------------------------ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }
 
-/* Utility classes */
-.animate-float {
-  animation: float 6s ease-in-out infinite;
-}
-
-.animate-glow-pulse {
-  animation: glowPulse 7s ease-in-out infinite;
-}
-
-.animate-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.06) 50%,
-    rgba(255, 255, 255, 0) 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 3.5s infinite;
-}
-
-.animate-fade-in-up {
-  animation: fadeInUp 0.7s ease-out both;
-}
-
-.animate-count-up {
-  animation: countUp 0.6s ease-out both;
-}
-
-.animate-slide-in-left {
-  animation: slideInLeft 0.6s ease-out both;
-}
-
-.animate-slide-in-right {
-  animation: slideInRight 0.6s ease-out both;
-}
-
-/* Stagger delays for sequential elements */
-.delay-100 { animation-delay: 0.1s; }
-.delay-200 { animation-delay: 0.2s; }
-.delay-300 { animation-delay: 0.3s; }
-.delay-400 { animation-delay: 0.4s; }
-.delay-500 { animation-delay: 0.5s; }
-.delay-600 { animation-delay: 0.6s; }
-
-/* ============================================================
-   CUSTOM DARK-THEME SCROLLBAR (matches blockchain.com feel)
-   ============================================================ */
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-::-webkit-scrollbar-track {
-  background: #0A0D14;
-}
-::-webkit-scrollbar-thumb {
-  background: #2A2A3A;
-  border-radius: 3px;
-}
-::-webkit-scrollbar-thumb:hover {
-  background: #3A3A50;
-}
-
-/* ============================================================
-   SMOOTH SCROLL BEHAVIOR
-   ============================================================ */
-html {
-  scroll-behavior: smooth;
+/* ---------------------------------------------------------------------------
+   Print — a verification result is a document. It must print as one.
+   ------------------------------------------------------------------------ */
+@media print {
+  html,
+  body {
+    background: #fff !important;
+  }
+  [data-print-hide] {
+    display: none !important;
+  }
+  [data-print-block] {
+    box-shadow: none !important;
+    border-color: #d4d4d8 !important;
+    break-inside: avoid;
+  }
 }
