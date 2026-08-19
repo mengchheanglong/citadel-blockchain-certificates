@@ -1,282 +1,243 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Html5QrcodeScanner } from 'html5-qrcode';
 import {
-  Shield,
   Search,
   QrCode,
-  ArrowLeft,
-  CheckCircle2,
-  Lock,
   X,
-  AlertCircle,
-  Sparkles,
+  ShieldCheck,
+  Blocks,
+  Eye,
+  ArrowRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
+import { Field } from '@/components/ui/field';
+import { PublicHeader, PublicFooter } from '@/components/layout/public-chrome';
+
+const ASSURANCES = [
+  {
+    icon: ShieldCheck,
+    title: 'Checked against the ledger',
+    body: 'The certificate’s fingerprint is compared with the record written on-chain when it was issued.',
+  },
+  {
+    icon: Eye,
+    title: 'No account needed',
+    body: 'Verification is public and anonymous. Nothing you enter here is shared with the issuing institution.',
+  },
+  {
+    icon: Blocks,
+    title: 'Independently checkable',
+    body: 'Every result links to the underlying transaction on a public block explorer.',
+  },
+];
 
 export default function VerifyEntryPage() {
   const router = useRouter();
 
-  const [certificateIdInput, setCertificateIdInput] = useState('');
+  const [certificateId, setCertificateId] = useState('');
   const [isScanning, setIsScanning] = useState(false);
-  const [errorMessage, setErrorMessage] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  // Extract certificate ID from input or scanned QR URL
+  /** Accepts a bare ID, a full verification URL, or a scanned QR payload. */
   const parseCertificateId = (raw: string): string => {
-    let clean = raw.trim();
-    if (clean.includes('/verify/')) {
-      const parts = clean.split('/verify/');
-      clean = parts[parts.length - 1].split('?')[0].split('#')[0];
-    } else if (clean.startsWith('http://') || clean.startsWith('https://')) {
+    let value = raw.trim();
+
+    if (value.includes('/verify/')) {
+      value = value.split('/verify/').pop()!.split(/[?#]/)[0];
+    } else if (/^https?:\/\//i.test(value)) {
       try {
-        const url = new URL(clean);
-        const segments = url.pathname.split('/').filter(Boolean);
-        if (segments.length > 0) {
-          clean = segments[segments.length - 1];
-        }
+        const segments = new URL(value).pathname.split('/').filter(Boolean);
+        if (segments.length > 0) value = segments[segments.length - 1];
       } catch {
-        // fallback to clean
+        /* Not a URL after all — fall through with the raw value. */
       }
     }
-    return clean.trim();
+
+    return decodeURIComponent(value).trim();
   };
 
-  const handleVerifySubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const id = parseCertificateId(certificateIdInput);
+  const handleSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
+    const id = parseCertificateId(certificateId);
+
     if (!id) {
-      setErrorMessage('Please enter a valid Certificate ID');
+      setError('Enter the certificate ID printed on the document.');
+      inputRef.current?.focus();
       return;
     }
-    setErrorMessage('');
+
+    setError(null);
     router.push(`/verify/${encodeURIComponent(id)}`);
   };
 
-  // QR Code Scanner Effect
   useEffect(() => {
+    if (!isScanning) return;
+
     let scanner: Html5QrcodeScanner | null = null;
 
-    if (isScanning) {
-      const timer = setTimeout(() => {
-        try {
-          scanner = new Html5QrcodeScanner(
-            'qr-reader',
-            {
-              fps: 10,
-              qrbox: { width: 250, height: 250 },
-            },
-            /* verbose= */ false
-          );
+    const timer = setTimeout(() => {
+      try {
+        scanner = new Html5QrcodeScanner(
+          'qr-reader',
+          { fps: 10, qrbox: { width: 240, height: 240 } },
+          false
+        );
 
-          scanner.render(
-            (decodedText) => {
-              const id = parseCertificateId(decodedText);
-              if (id) {
-                scanner?.clear().catch(console.error);
-                setIsScanning(false);
-                router.push(`/verify/${encodeURIComponent(id)}`);
-              }
-            },
-            (error) => {
-              // Frame scanning errors are ignored
-            }
-          );
-        } catch (err) {
-          console.error('Failed to initialize QR scanner:', err);
-        }
-      }, 100);
+        scanner.render(
+          (decodedText) => {
+            const id = parseCertificateId(decodedText);
+            if (!id) return;
+            scanner?.clear().catch(() => undefined);
+            setIsScanning(false);
+            router.push(`/verify/${encodeURIComponent(id)}`);
+          },
+          () => {
+            /* Per-frame decode misses are expected; stay quiet. */
+          }
+        );
+      } catch (err) {
+        console.error('Failed to start the QR scanner:', err);
+        setIsScanning(false);
+        setError('The camera could not be started. Enter the certificate ID instead.');
+      }
+    }, 100);
 
-      return () => {
-        clearTimeout(timer);
-        if (scanner) {
-          scanner.clear().catch(console.error);
-        }
-      };
-    }
+    return () => {
+      clearTimeout(timer);
+      scanner?.clear().catch(() => undefined);
+    };
   }, [isScanning, router]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 font-sans antialiased">
-      {/* Navigation Header */}
-      <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-20 max-w-6xl items-center justify-between px-6 sm:px-8">
-          <Link
-            href="/"
-            className="flex items-center gap-2 text-xs font-bold text-slate-600 transition hover:text-[#C8102E]"
-          >
-            <ArrowLeft className="h-4 w-4" />
-            <span>Back to Home</span>
-          </Link>
+    <div className="flex min-h-screen flex-col bg-canvas">
+      <PublicHeader />
 
-          <Link href="/" className="flex items-center gap-3.5 transition hover:opacity-90">
-            <CitadelLogo className="h-12 w-12" size={64} />
-            <span className="text-2xl font-[900] tracking-tight text-slate-900">
-              Citadel
-            </span>
-          </Link>
-
-          <Link href="/login">
-            <Button variant="outline" size="sm" className="rounded-full text-xs font-semibold border-slate-200 text-slate-700 hover:text-slate-900">
-              Issuer Login
-            </Button>
-          </Link>
-        </div>
-      </header>
-
-      {/* Main Content */}
-      <main className="flex-1 py-14 sm:py-20">
-        <div className="container mx-auto max-w-xl px-4 sm:px-6">
-          {/* Heading */}
-          <div className="text-center space-y-3">
-            <div className="inline-flex items-center gap-2 rounded-full border border-[#C8102E]/30 bg-[#C8102E]/10 px-3.5 py-1 text-xs font-bold text-[#C8102E] shadow-2xs">
-              <Lock className="h-3.5 w-3.5" />
-              <span>Public Verification Engine</span>
-            </div>
-            <h1 className="text-3xl font-[900] tracking-tight text-slate-900 sm:text-4xl">
-              Verify a Certificate
+      <main id="main" className="flex-1 px-5 py-12 sm:px-8 sm:py-16">
+        <div className="mx-auto max-w-xl">
+          <div className="space-y-3 text-center">
+            <p className="eyebrow">Public verification</p>
+            <h1 className="font-serif text-3xl font-semibold tracking-tight text-ink">
+              Verify a certificate
             </h1>
-            <p className="text-xs text-slate-600 sm:text-sm max-w-md mx-auto leading-relaxed">
-              Enter a Certificate ID or scan a diploma QR code to verify its cryptographic authenticity directly against Ethereum.
+            <p className="mx-auto max-w-md text-sm leading-relaxed text-ink-muted">
+              Enter the certificate ID or scan the QR code on the document to
+              confirm it is genuine, current, and issued by the institution it
+              names.
             </p>
           </div>
 
-          {/* Verification Box */}
-          <Card className="mt-8 border-slate-200/90 bg-white shadow-md rounded-3xl overflow-hidden">
-            <CardContent className="pt-7 p-7 space-y-6">
-              {/* Form Input */}
-              <form onSubmit={handleVerifySubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <div className="relative">
-                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                    <Input
-                      type="text"
-                      placeholder="Enter Certificate ID (e.g., CERT-2026-A3B7K)"
-                      value={certificateIdInput}
-                      onChange={(e) => {
-                        setCertificateIdInput(e.target.value);
-                        if (errorMessage) setErrorMessage('');
-                      }}
-                      className="pl-11 h-12 text-xs sm:text-sm font-mono rounded-2xl border-slate-200 focus:border-[#C8102E]"
-                      autoFocus
-                    />
-                  </div>
+          <div className="mt-8 rounded-xl border border-line bg-surface p-6 shadow-sm sm:p-7">
+            <form onSubmit={handleSubmit} noValidate className="space-y-4">
+              <Field
+                htmlFor="certificateId"
+                label="Certificate ID"
+                error={error}
+                hint="Printed beneath the QR code, in the form CERT-2026-XXXXXXX."
+              >
+                <Input
+                  id="certificateId"
+                  ref={inputRef}
+                  autoFocus
+                  autoComplete="off"
+                  spellCheck={false}
+                  placeholder="CERT-2026-A3B7K"
+                  leading={<Search />}
+                  className="metadata h-11 text-md"
+                  value={certificateId}
+                  invalid={Boolean(error)}
+                  onChange={(event) => {
+                    setCertificateId(event.target.value);
+                    if (error) setError(null);
+                  }}
+                />
+              </Field>
 
-                  {errorMessage && (
-                    <div className="flex items-center gap-1.5 text-xs text-rose-600 pl-1">
-                      <AlertCircle className="h-3.5 w-3.5" />
-                      <span>{errorMessage}</span>
-                    </div>
-                  )}
-                </div>
+              <Button type="submit" size="lg" className="w-full">
+                Verify certificate
+                <ArrowRight aria-hidden />
+              </Button>
+            </form>
 
-                <Button
-                  type="submit"
-                  className="w-full h-12 rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
-                >
-                  <Search className="mr-2 h-4 w-4" />
-                  Verify Certificate
-                </Button>
-              </form>
+            <div className="relative my-6 flex items-center" aria-hidden>
+              <span className="h-px flex-1 bg-line" />
+              <span className="px-3 text-2xs font-semibold uppercase tracking-[0.12em] text-ink-subtle">
+                or
+              </span>
+              <span className="h-px flex-1 bg-line" />
+            </div>
 
-              {/* OR Divider */}
-              <div className="relative flex items-center justify-center">
-                <div className="w-full border-t border-slate-200" />
-                <span className="relative bg-white px-3 text-[10px] uppercase font-bold tracking-widest text-slate-400">
-                  OR
-                </span>
-              </div>
-
-              {/* QR Code Scanner Toggle & Container */}
-              {!isScanning ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsScanning(true)}
-                  className="w-full h-12 rounded-full border-slate-200 text-slate-700 hover:bg-slate-50 gap-2 font-bold text-xs"
-                >
-                  <QrCode className="h-4 w-4 text-[#C8102E]" />
-                  <span>Scan Diploma QR Code</span>
-                </Button>
-              ) : (
-                <div className="space-y-3 rounded-2xl border border-[#C8102E]/30 bg-slate-50 p-5 text-center">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
-                      <QrCode className="h-4 w-4 text-[#C8102E]" />
-                      <span>Camera Scanner Active</span>
-                    </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => setIsScanning(false)}
-                      className="h-7 w-7 p-0 text-slate-500 hover:text-slate-900"
-                      title="Close Scanner"
-                    >
-                      <X className="h-4 w-4" />
-                    </Button>
-                  </div>
-
-                  <p className="text-[11px] text-slate-500">
-                    Point your camera at the QR code printed on the certificate.
+            {isScanning ? (
+              <div className="space-y-3 rounded-lg border border-line bg-surface-muted/60 p-4">
+                <div className="flex items-center justify-between">
+                  <p className="flex items-center gap-2 text-sm font-medium text-ink">
+                    <QrCode className="h-4 w-4 text-brand" aria-hidden />
+                    Camera active
                   </p>
-
-                  <div
-                    id="qr-reader"
-                    className="overflow-hidden rounded-xl border border-slate-200 bg-white"
-                  />
-
                   <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setIsScanning(false)}
-                    className="w-full rounded-full text-xs font-semibold"
+                    aria-label="Close the scanner"
                   >
-                    Cancel Scan
+                    <X aria-hidden />
                   </Button>
                 </div>
-              )}
-            </CardContent>
-          </Card>
 
-          {/* Verification Benefits Cards */}
-          <div className="mt-8 grid gap-3 text-xs text-slate-600 sm:grid-cols-2">
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-slate-900 block">
-                  Instant Blockchain Validation
-                </span>
-                <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">
-                  Cryptographically matches against the immutable smart contract registry.
+                <p className="text-xs text-ink-muted">
+                  Hold the certificate&apos;s QR code steady inside the frame.
                 </p>
-              </div>
-            </div>
 
-            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
-              <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
-              <div>
-                <span className="font-bold text-slate-900 block">
-                  Zero Trust Required
-                </span>
-                <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">
-                  Completely transparent, independent verification without intermediaries.
-                </p>
+                <div
+                  id="qr-reader"
+                  className="overflow-hidden rounded-md border border-line bg-surface"
+                />
               </div>
-            </div>
+            ) : (
+              <Button
+                type="button"
+                variant="outline"
+                size="lg"
+                className="w-full"
+                onClick={() => setIsScanning(true)}
+              >
+                <QrCode aria-hidden />
+                Scan QR code with camera
+              </Button>
+            )}
           </div>
+
+          <ul className="mt-8 grid gap-3 sm:grid-cols-3">
+            {ASSURANCES.map(({ icon: Icon, title, body }) => (
+              <li
+                key={title}
+                className="rounded-lg border border-line bg-surface p-4"
+              >
+                <Icon className="h-4 w-4 text-brand" aria-hidden />
+                <p className="mt-2.5 text-sm font-medium text-ink">{title}</p>
+                <p className="mt-1 text-xs leading-relaxed text-ink-muted">{body}</p>
+              </li>
+            ))}
+          </ul>
+
+          <p className="mt-8 text-center text-xs text-ink-muted">
+            Issue certificates for your institution?{' '}
+            <Link
+              href="/register"
+              className="rounded-sm font-medium text-brand transition-colors hover:underline"
+            >
+              Register as an issuer
+            </Link>
+          </p>
         </div>
       </main>
 
-      {/* Footer */}
-      <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-        &copy; {new Date().getFullYear()} Citadel. Immutable blockchain credentialing.
-      </footer>
+      <PublicFooter />
     </div>
   );
 }
