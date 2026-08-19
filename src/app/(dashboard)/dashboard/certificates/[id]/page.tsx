@@ -1,62 +1,61 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import {
   ArrowLeft,
-  Award,
-  Calendar,
-  Check,
-  CheckCircle2,
-  Copy,
+  Ban,
   Download,
   ExternalLink,
-  FileBadge2,
-  Hash,
-  Loader2,
   Mail,
   Send,
-  Shield,
-  ShieldAlert,
-  ShieldCheck,
   User,
-  XCircle,
+  BookOpen,
+  Calendar,
   Clock,
-  Ban,
-  Building2,
-  FileText,
+  Hash,
+  Blocks,
+  Network,
+  FileWarning,
+  ShieldCheck,
   QrCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
+import { Field } from '@/components/ui/field';
+import { DataList, DataRow } from '@/components/ui/data-list';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { Skeleton } from '@/components/ui/skeleton';
+import { Badge } from '@/components/ui/badge';
+import { CertificateDocument } from '@/components/certificates/certificate-document';
 import { useToast } from '@/components/ui/use-toast';
 import {
   formatDate,
+  formatDateTime,
   shortenHash,
   getEtherscanUrl,
-  cn,
+  getEtherscanAddressUrl,
+  formatNetworkName,
 } from '@/lib/utils';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 interface BlockchainTransactionItem {
   id: string;
@@ -94,28 +93,23 @@ interface CertificateDetail {
   transactions: BlockchainTransactionItem[];
 }
 
+const MIN_REASON_LENGTH = 5;
+
 export default function CertificateDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const { toast } = useToast();
-
   const certificateDbId = (params?.id as string) || '';
 
-  // State
   const [certificate, setCertificate] = useState<CertificateDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Email resend state
-  const [isResendingEmail, setIsResendingEmail] = useState(false);
-
-  // Revoke Dialog state
-  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
+  const [isResending, setIsResending] = useState(false);
+  const [isRevokeOpen, setIsRevokeOpen] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
+  const [revokeError, setRevokeError] = useState<string | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
 
-  // Fetch certificate details
   const fetchCertificate = useCallback(async () => {
     if (!certificateDbId) return;
     setIsLoading(true);
@@ -128,10 +122,10 @@ export default function CertificateDetailPage() {
       if (data.success && data.certificate) {
         setCertificate(data.certificate);
       } else {
-        setErrorMessage(data.message || 'Certificate record not found.');
+        setErrorMessage(data.message || 'This certificate record could not be found.');
       }
     } catch (err: any) {
-      setErrorMessage(err?.message || 'Error fetching certificate details.');
+      setErrorMessage(err?.message || 'The record could not be loaded.');
     } finally {
       setIsLoading(false);
     }
@@ -141,19 +135,9 @@ export default function CertificateDetailPage() {
     fetchCertificate();
   }, [fetchCertificate]);
 
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast({
-      title: 'Copied to Clipboard',
-      description: `${key} copied.`,
-    });
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
-
   const handleResendEmail = async () => {
     if (!certificate) return;
-    setIsResendingEmail(true);
+    setIsResending(true);
 
     try {
       const res = await fetch(
@@ -164,41 +148,41 @@ export default function CertificateDetailPage() {
 
       if (data.success) {
         toast({
-          title: 'Email Sent Successfully',
-          description: `PDF diploma dispatched to ${certificate.recipientEmail}.`,
+          variant: 'success',
+          title: 'Certificate sent',
+          description: `Delivered to ${certificate.recipientEmail}.`,
         });
-        setCertificate((prev) => (prev ? { ...prev, emailSent: true } : null));
+        setCertificate((prev) => (prev ? { ...prev, emailSent: true } : prev));
       } else {
         toast({
           variant: 'destructive',
-          title: 'Email Failed',
-          description: data.message || 'Unable to send email.',
+          title: 'Delivery failed',
+          description: data.message || 'The email could not be sent.',
         });
       }
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Error',
-        description: err?.message || 'Error dispatching email.',
+        title: 'Delivery failed',
+        description: err?.message || 'The mail server could not be reached.',
       });
     } finally {
-      setIsResendingEmail(false);
+      setIsResending(false);
     }
   };
 
-  const handleRevokeSubmit = async () => {
+  const handleRevoke = async () => {
     if (!certificate) return;
 
-    if (!revokeReason.trim() || revokeReason.trim().length < 5) {
-      toast({
-        variant: 'destructive',
-        title: 'Reason Required',
-        description: 'Please provide an official audit reason (at least 5 characters).',
-      });
+    if (revokeReason.trim().length < MIN_REASON_LENGTH) {
+      setRevokeError(
+        `Give an auditable reason of at least ${MIN_REASON_LENGTH} characters. It is stored permanently with the record.`
+      );
       return;
     }
 
     setIsRevoking(true);
+    setRevokeError(null);
 
     try {
       const res = await fetch(`/api/certificates/${certificate.id}/revoke`, {
@@ -210,348 +194,489 @@ export default function CertificateDetailPage() {
 
       if (data.success) {
         toast({
-          title: 'Certificate Revoked on Blockchain',
-          description: `Status updated on Ethereum Sepolia ledger.`,
+          variant: 'success',
+          title: 'Certificate revoked',
+          description: 'The revocation is recorded on-chain.',
         });
-        setIsRevokeDialogOpen(false);
+        setIsRevokeOpen(false);
+        setRevokeReason('');
         fetchCertificate();
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Revocation Failed',
-          description: data.message || 'Unable to revoke on-chain.',
-        });
+        setRevokeError(data.message || 'The registry contract rejected the revocation.');
       }
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Network Error',
-        description: err?.message || 'Failed to revoke certificate.',
-      });
+      setRevokeError(err?.message || 'The network request failed. Try again.');
     } finally {
       setIsRevoking(false);
     }
   };
 
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'VALID':
-        return 'valid';
-      case 'EXPIRED':
-        return 'expired';
-      case 'REVOKED':
-        return 'revoked';
-      default:
-        return 'secondary';
-    }
-  };
-
+  /* ------------------------------------------------------------------ */
   if (isLoading) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-slate-400">
-        <Loader2 className="h-10 w-10 animate-spin text-[#C8102E]" />
-        <p className="mt-4 text-xs font-bold uppercase tracking-wider text-slate-500">
-          Loading certificate verification data...
-        </p>
-      </div>
-    );
+    return <DetailSkeleton />;
   }
 
   if (errorMessage || !certificate) {
     return (
-      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600">
-          <ShieldAlert className="h-6 w-6" />
-        </div>
-        <h3 className="mt-4 text-lg font-[900] text-red-900">Certificate Not Found</h3>
-        <p className="mt-1 text-xs text-red-600">{errorMessage || 'Unable to find certificate record.'}</p>
-        <Link href="/dashboard/certificates">
-          <Button variant="outline" className="mt-5 rounded-full bg-white text-xs font-semibold">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Back to Registry
-          </Button>
-        </Link>
+      <div className="rounded-xl border border-line bg-surface shadow-xs">
+        <EmptyState
+          icon={FileWarning}
+          tone="danger"
+          title="Record not found"
+          description={
+            errorMessage || 'No certificate matches this reference in your registry.'
+          }
+          action={
+            <Button asChild variant="outline" size="sm">
+              <Link href="/dashboard/certificates">
+                <ArrowLeft aria-hidden />
+                Back to registry
+              </Link>
+            </Button>
+          }
+        />
       </div>
     );
   }
 
+  const issueTx = certificate.transactions?.find((t) => t.action === 'ISSUE')
+    ?? certificate.transactions?.[0];
+  const revokeTx = certificate.transactions?.find((t) => t.action === 'REVOKE');
+
   return (
-    <div className="space-y-8">
-      {/* Top Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <Link
-            href="/dashboard/certificates"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition mb-2"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Registry</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl font-mono">
-              {certificate.certificateId}
-            </h1>
-            <Badge variant={getBadgeVariant(certificate.status) as any}>
-              {certificate.status}
-            </Badge>
+    <div className="space-y-6">
+      <PageHeader
+        breadcrumbs={[{ label: 'Registry', href: '/dashboard/certificates' }]}
+        title={<span className="metadata text-xl">{certificate.certificateId}</span>}
+        badge={<StatusBadge status={certificate.status} size="md" withIcon />}
+        description={`${certificate.courseName} — awarded to ${certificate.recipientName}`}
+        actions={
+          <>
+            <Button asChild size="sm">
+              <a
+                href={`/api/certificates/${certificate.id}/pdf`}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                <Download aria-hidden />
+                Download PDF
+              </a>
+            </Button>
+            <Button asChild variant="outline" size="sm">
+              <Link
+                href={`/verify/${encodeURIComponent(certificate.certificateId)}`}
+                target="_blank"
+              >
+                <ExternalLink aria-hidden />
+                Public page
+              </Link>
+            </Button>
+            {certificate.status === 'VALID' ? (
+              <Button variant="danger" size="sm" onClick={() => setIsRevokeOpen(true)}>
+                <Ban aria-hidden />
+                Revoke
+              </Button>
+            ) : null}
+          </>
+        }
+      />
+
+      {/* Revocation notice takes precedence over everything else on the page. */}
+      {certificate.status === 'REVOKED' ? (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-xl border border-danger-line bg-danger-soft p-4"
+        >
+          <Ban className="mt-0.5 h-5 w-5 shrink-0 text-danger-fg" aria-hidden />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-danger-fg">
+              This certificate was revoked
+              {certificate.revokedAt
+                ? ` on ${formatDate(certificate.revokedAt)}`
+                : ''}
+            </p>
+            {certificate.revokeReason ? (
+              <p className="text-xs leading-relaxed text-danger-fg/85">
+                Recorded reason: “{certificate.revokeReason}”
+              </p>
+            ) : null}
           </div>
         </div>
+      ) : null}
 
-        <div className="flex flex-wrap items-center gap-3">
-          <a
-            href={`/api/certificates/${certificate.id}/pdf`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md">
-              <Download className="mr-1.5 h-4 w-4" />
-              Download PDF Diploma
-            </Button>
-          </a>
-
-          <Link
-            href={`/verify/${encodeURIComponent(certificate.certificateId)}`}
-            target="_blank"
-          >
-            <Button variant="outline" className="rounded-full border-slate-200 text-xs font-semibold">
-              <ExternalLink className="mr-1.5 h-4 w-4" />
-              Public Verification
-            </Button>
-          </Link>
-
-          {certificate.status === 'VALID' && (
-            <Button
-              variant="outline"
-              onClick={() => setIsRevokeDialogOpen(true)}
-              className="rounded-full border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
-            >
-              <Ban className="mr-1.5 h-4 w-4" />
-              Revoke
-            </Button>
-          )}
+      {certificate.status === 'EXPIRED' ? (
+        <div
+          role="status"
+          className="flex items-start gap-3 rounded-xl border border-warning-line bg-warning-soft p-4"
+        >
+          <Clock className="mt-0.5 h-5 w-5 shrink-0 text-warning-fg" aria-hidden />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-warning-fg">
+              This certificate expired
+              {certificate.expiryDate
+                ? ` on ${formatDate(certificate.expiryDate)}`
+                : ''}
+            </p>
+            <p className="text-xs leading-relaxed text-warning-fg/85">
+              It remains authentic and on the ledger, but is no longer current.
+              Issue a replacement if the holder needs an active credential.
+            </p>
+          </div>
         </div>
-      </div>
+      ) : null}
 
-      {/* Main Grid Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-        {/* Left Column: 7 Columns */}
-        <div className="lg:col-span-7 space-y-6">
-          {/* Certificate Metadata Card */}
-          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
-              <CardTitle className="text-base font-[900] text-slate-900">
-                Academic Credential Information
-              </CardTitle>
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* -------------------------------------------------------------- */}
+        {/* Record                                                          */}
+        {/* -------------------------------------------------------------- */}
+        <div className="space-y-6 lg:col-span-7">
+          <Card>
+            <CardHeader>
+              <CardTitle>Credential details</CardTitle>
+              <CardDescription>
+                The exact values hashed into the on-chain record
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-5 space-y-4 text-xs">
-              <div className="grid grid-cols-2 gap-4 pb-3 border-b border-slate-100">
-                <div>
-                  <span className="text-slate-400 block font-medium">Recipient Name:</span>
-                  <span className="font-bold text-sm text-slate-900">{certificate.recipientName}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Recipient Email:</span>
-                  <span className="font-bold text-slate-800 font-mono">{certificate.recipientEmail}</span>
-                </div>
-              </div>
-
-              <div className="space-y-1 pb-3 border-b border-slate-100">
-                <span className="text-slate-400 block font-medium">Program / Degree Title:</span>
-                <span className="font-bold text-sm text-[#C8102E]">{certificate.courseName}</span>
-              </div>
-
-              {certificate.courseDescription && (
-                <div className="space-y-1 pb-3 border-b border-slate-100">
-                  <span className="text-slate-400 block font-medium">Description & Honors:</span>
-                  <p className="text-slate-600 italic">{certificate.courseDescription}</p>
-                </div>
-              )}
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <span className="text-slate-400 block font-medium">Issue Date:</span>
-                  <span className="font-bold text-slate-800">{formatDate(certificate.issueDate)}</span>
-                </div>
-                <div>
-                  <span className="text-slate-400 block font-medium">Expiration:</span>
-                  <span className="font-bold text-emerald-600">
-                    {certificate.expiryDate ? formatDate(certificate.expiryDate) : 'Lifetime Validity'}
-                  </span>
-                </div>
-              </div>
+            <CardContent className="p-0">
+              <DataList className="rounded-none border-0">
+                <DataRow
+                  icon={<User />}
+                  label="Recipient"
+                  value={
+                    <>
+                      {certificate.recipientName}
+                      <span className="block text-xs text-ink-muted">
+                        {certificate.recipientEmail}
+                      </span>
+                    </>
+                  }
+                />
+                <DataRow
+                  icon={<BookOpen />}
+                  label="Programme"
+                  value={
+                    <>
+                      {certificate.courseName}
+                      {certificate.courseDescription ? (
+                        <span className="mt-1 block text-xs leading-relaxed text-ink-muted">
+                          {certificate.courseDescription}
+                        </span>
+                      ) : null}
+                    </>
+                  }
+                />
+                <DataRow
+                  icon={<Calendar />}
+                  label="Issued"
+                  value={formatDate(certificate.issueDate)}
+                />
+                <DataRow
+                  icon={<Clock />}
+                  label="Valid until"
+                  value={
+                    certificate.expiryDate
+                      ? formatDate(certificate.expiryDate)
+                      : 'No expiry'
+                  }
+                />
+              </DataList>
             </CardContent>
           </Card>
 
-          {/* Recipient Delivery & Notifications */}
-          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-              <CardTitle className="text-base font-[900] text-slate-900">
-                Recipient Delivery & Notifications
-              </CardTitle>
-              <Badge variant="outline" className={certificate.emailSent ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}>
-                {certificate.emailSent ? 'Email Dispatched' : 'Email Pending'}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between gap-4">
+              <div>
+                <CardTitle>Delivery</CardTitle>
+                <CardDescription>
+                  The recipient receives a PDF and a verification link
+                </CardDescription>
+              </div>
+              <Badge variant={certificate.emailSent ? 'valid' : 'expired'}>
+                {certificate.emailSent ? 'Sent' : 'Not sent'}
               </Badge>
             </CardHeader>
-            <CardContent className="pt-5 flex items-center justify-between">
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold text-slate-800">Automated PDF Diploma Delivery</p>
-                <p className="text-xs text-slate-500">Recipient is sent the vector PDF with verification links</p>
+            <CardContent className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-start gap-3">
+                <span
+                  className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-surface-muted text-ink-muted"
+                  aria-hidden
+                >
+                  <Mail className="h-4 w-4" />
+                </span>
+                <div>
+                  <p className="text-sm font-medium text-ink">
+                    {certificate.recipientEmail}
+                  </p>
+                  <p className="text-xs text-ink-muted">
+                    {certificate.emailSent
+                      ? 'The certificate has been emailed to this address.'
+                      : 'Delivery has not been confirmed for this address.'}
+                  </p>
+                </div>
               </div>
+
               <Button
                 variant="outline"
                 size="sm"
                 onClick={handleResendEmail}
-                disabled={isResendingEmail}
-                className="rounded-xl text-xs font-semibold border-slate-200"
+                loading={isResending}
               >
-                {isResendingEmail ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    Sending...
-                  </>
+                {isResending ? (
+                  'Sending…'
                 ) : (
                   <>
-                    <Send className="mr-1.5 h-3.5 w-3.5" />
-                    Resend Email
+                    <Send aria-hidden />
+                    {certificate.emailSent ? 'Resend' : 'Send now'}
                   </>
                 )}
               </Button>
             </CardContent>
           </Card>
-        </div>
 
-        {/* Right Column: 5 Columns (Blockchain Proofs & QR) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Blockchain Proof Card */}
-          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-base font-[900] text-slate-900">
-                  Ethereum Ledger Proof
-                </CardTitle>
-                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                  Mined on EVM
-                </span>
-              </div>
+          <Card>
+            <CardHeader>
+              <CardTitle>Ledger proof</CardTitle>
+              <CardDescription>
+                Independently checkable on a public block explorer
+              </CardDescription>
             </CardHeader>
-            <CardContent className="pt-5 space-y-3 font-mono text-xs">
-              <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-1">
-                <span className="text-slate-400 text-[10px] block uppercase">Cryptographic SHA-256 Hash</span>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-slate-800 font-bold truncate text-[11px]">{certificate.certificateHash}</span>
-                  <button onClick={() => handleCopy(certificate.certificateHash, 'SHA-256 Hash')} className="text-slate-400 hover:text-slate-600">
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              {certificate.transactions?.[0] && (
-                <>
-                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-1">
-                    <span className="text-slate-400 text-[10px] block uppercase">Ethereum Transaction Hash</span>
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="text-slate-800 font-bold truncate text-[11px]">{certificate.transactions[0].txHash}</span>
-                      <button onClick={() => handleCopy(certificate.transactions[0].txHash, 'Tx Hash')} className="text-slate-400 hover:text-slate-600">
-                        <Copy className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3 text-[11px]">
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <span className="text-slate-400 block text-[10px]">Block Number</span>
-                      <span className="font-bold text-slate-800">{certificate.transactions[0].blockNumber}</span>
-                    </div>
-                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
-                      <span className="text-slate-400 block text-[10px]">Network</span>
-                      <span className="font-bold text-emerald-600">{certificate.transactions[0].networkName}</span>
-                    </div>
-                  </div>
-                </>
-              )}
+            <CardContent className="p-0">
+              <DataList className="rounded-none border-0">
+                <DataRow
+                  icon={<Hash />}
+                  label="Certificate hash (SHA-256)"
+                  value={certificate.certificateHash}
+                  mono
+                  copyValue={certificate.certificateHash}
+                  fallback="Not recorded"
+                />
+                <DataRow
+                  icon={<ExternalLink />}
+                  label="Issuance transaction"
+                  mono
+                  copyValue={issueTx?.txHash}
+                  fallback="Awaiting confirmation"
+                  value={
+                    issueTx?.txHash ? (
+                      <a
+                        href={getEtherscanUrl(
+                          issueTx.txHash,
+                          issueTx.networkName || 'sepolia'
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-sm text-brand hover:underline"
+                      >
+                        {shortenHash(issueTx.txHash, 10)}
+                        <ExternalLink className="h-3 w-3" aria-hidden />
+                      </a>
+                    ) : null
+                  }
+                />
+                {revokeTx ? (
+                  <DataRow
+                    icon={<Ban />}
+                    label="Revocation transaction"
+                    mono
+                    copyValue={revokeTx.txHash}
+                    value={
+                      <a
+                        href={getEtherscanUrl(
+                          revokeTx.txHash,
+                          revokeTx.networkName || 'sepolia'
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-sm text-brand hover:underline"
+                      >
+                        {shortenHash(revokeTx.txHash, 10)}
+                        <ExternalLink className="h-3 w-3" aria-hidden />
+                      </a>
+                    }
+                  />
+                ) : null}
+                <DataRow
+                  icon={<Blocks />}
+                  label="Block"
+                  value={issueTx?.blockNumber ? `#${issueTx.blockNumber}` : null}
+                  fallback="Pending"
+                  mono
+                />
+                <DataRow
+                  icon={<Network />}
+                  label="Network"
+                  value={formatNetworkName(issueTx?.networkName)}
+                />
+                <DataRow
+                  icon={<ShieldCheck />}
+                  label="Registry contract"
+                  mono
+                  copyValue={issueTx?.contractAddress}
+                  fallback="Not recorded"
+                  value={
+                    issueTx?.contractAddress ? (
+                      <a
+                        href={getEtherscanAddressUrl(
+                          issueTx.contractAddress,
+                          issueTx.networkName || 'sepolia'
+                        )}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 rounded-sm text-brand hover:underline"
+                      >
+                        {shortenHash(issueTx.contractAddress, 8)}
+                        <ExternalLink className="h-3 w-3" aria-hidden />
+                      </a>
+                    ) : null
+                  }
+                />
+                {issueTx?.timestamp ? (
+                  <DataRow
+                    icon={<Clock />}
+                    label="Recorded at"
+                    value={formatDateTime(issueTx.timestamp)}
+                  />
+                ) : null}
+              </DataList>
             </CardContent>
           </Card>
+        </div>
 
-          {/* QR Code Verification Display */}
-          {certificate.qrCodeData && (
-            <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden p-6 text-center space-y-3">
-              <div className="flex justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={certificate.qrCodeData}
-                  alt="Certificate Verification QR Code"
-                  className="h-36 w-36 rounded-2xl border border-slate-200 p-2 shadow-2xs"
-                />
-              </div>
-              <div>
-                <p className="text-xs font-bold text-slate-900">Instant Camera QR Verification</p>
-                <p className="text-[11px] text-slate-500">Scan with any mobile camera to verify on Ethereum</p>
-              </div>
-            </Card>
-          )}
+        {/* -------------------------------------------------------------- */}
+        {/* Document & QR                                                   */}
+        {/* -------------------------------------------------------------- */}
+        <div className="space-y-6 lg:col-span-5">
+          <div className="lg:sticky lg:top-24 space-y-6">
+            <CertificateDocument
+              organizationName={certificate.organization?.name || 'Issuing organisation'}
+              recipientName={certificate.recipientName}
+              courseName={certificate.courseName}
+              courseDescription={certificate.courseDescription}
+              certificateId={certificate.certificateId}
+              issueDate={certificate.issueDate}
+              expiryDate={certificate.expiryDate}
+              qrCodeData={certificate.qrCodeData}
+              status={certificate.status}
+            />
+
+            {certificate.qrCodeData ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <QrCode className="h-4 w-4 text-brand" aria-hidden />
+                    Verification code
+                  </CardTitle>
+                  <CardDescription>
+                    Anyone can scan this to confirm the credential
+                  </CardDescription>
+                </CardHeader>
+                <CardContent className="flex items-center gap-4">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={certificate.qrCodeData}
+                    alt={`QR code linking to the verification page for ${certificate.certificateId}`}
+                    className="h-24 w-24 rounded-md border border-line bg-white p-1.5"
+                  />
+                  <div className="min-w-0 space-y-2">
+                    <p className="text-xs leading-relaxed text-ink-muted">
+                      Printed on the PDF certificate. It resolves to the public
+                      verification page for this record.
+                    </p>
+                    <Button asChild variant="outline" size="sm">
+                      <Link
+                        href={`/verify/${encodeURIComponent(certificate.certificateId)}`}
+                        target="_blank"
+                      >
+                        Open verification page
+                        <ExternalLink aria-hidden />
+                      </Link>
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            ) : null}
+          </div>
         </div>
       </div>
 
-      {/* Revocation Dialog */}
-      <Dialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
+      {/* ---------------------------------------------------------------- */}
+      {/* Revocation                                                        */}
+      {/* ---------------------------------------------------------------- */}
+      <Dialog
+        open={isRevokeOpen}
+        onOpenChange={(open) => {
+          if (!isRevoking) setIsRevokeOpen(open);
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
-              <ShieldAlert className="h-6 w-6" />
-            </div>
-            <DialogTitle className="text-center text-lg font-[900] text-slate-900">
-              Confirm Blockchain Revocation
-            </DialogTitle>
-            <DialogDescription className="text-center text-xs text-slate-500">
-              This will permanently invalidate Certificate <span className="font-mono font-bold text-[#C8102E]">{certificate.certificateId}</span> on the smart contract.
+            <DialogTitle>Revoke this certificate?</DialogTitle>
+            <DialogDescription>
+              Revocation is written to the blockchain and cannot be undone. Anyone
+              verifying {certificate.certificateId} from now on will see it as
+              revoked, together with the reason you record below.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-3 pt-2">
-            <Label htmlFor="detailRevokeReason" className="text-xs font-bold text-slate-700">
-              Official Revocation Reason <span className="text-rose-500">*</span>
-            </Label>
-            <Textarea
-              id="detailRevokeReason"
-              placeholder="State the official audit reason..."
-              value={revokeReason}
-              onChange={(e) => setRevokeReason(e.target.value)}
-              rows={3}
-              className="text-xs rounded-xl border-slate-200 focus:border-rose-500"
-            />
-          </div>
+          <DialogBody>
+            <Field
+              htmlFor="detail-revoke-reason"
+              label="Reason for revocation"
+              required
+              error={revokeError}
+              hint="Recorded permanently and shown on the public verification page."
+            >
+              <Textarea
+                id="detail-revoke-reason"
+                autoFocus
+                rows={3}
+                placeholder="e.g. Issued in error — superseded by CERT-2026-XXXXX"
+                value={revokeReason}
+                invalid={Boolean(revokeError)}
+                onChange={(event) => {
+                  setRevokeReason(event.target.value);
+                  if (revokeError) setRevokeError(null);
+                }}
+              />
+            </Field>
+          </DialogBody>
 
-          <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+          <DialogFooter>
             <Button
-              type="button"
               variant="outline"
-              size="sm"
-              onClick={() => setIsRevokeDialogOpen(false)}
+              onClick={() => setIsRevokeOpen(false)}
               disabled={isRevoking}
-              className="rounded-xl text-xs font-semibold border-slate-200"
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleRevokeSubmit}
-              disabled={isRevoking}
-              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs"
-            >
-              {isRevoking ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Mining Invalidation...
-                </>
-              ) : (
-                'Confirm Revocation'
-              )}
+            <Button variant="destructive" onClick={handleRevoke} loading={isRevoking}>
+              {isRevoking ? 'Revoking…' : 'Revoke certificate'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+function DetailSkeleton() {
+  return (
+    <div className="space-y-6" aria-busy>
+      <div className="space-y-3">
+        <Skeleton className="h-3 w-40" />
+        <Skeleton className="h-7 w-64" />
+        <Skeleton className="h-4 w-96" />
+      </div>
+      <div className="grid gap-6 lg:grid-cols-12">
+        <div className="space-y-6 lg:col-span-7">
+          <Skeleton className="h-64 w-full rounded-xl" />
+          <Skeleton className="h-36 w-full rounded-xl" />
+        </div>
+        <div className="lg:col-span-5">
+          <Skeleton className="h-[420px] w-full rounded-xl" />
+        </div>
+      </div>
+      <span className="sr-only">Loading certificate record</span>
     </div>
   );
 }

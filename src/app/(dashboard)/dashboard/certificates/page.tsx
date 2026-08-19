@@ -1,31 +1,31 @@
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {
+  Suspense,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import Link from 'next/link';
+import { useSearchParams } from 'next/navigation';
 import {
   Search,
   PlusCircle,
-  Eye,
-  Ban,
-  Loader2,
-  ChevronLeft,
-  ChevronRight,
-  FileBadge2,
-  AlertTriangle,
-  RotateCcw,
-  CheckCircle,
-  Copy,
-  Check,
   Download,
   ExternalLink,
-  Filter,
-  ShieldAlert,
-  ShieldCheck,
-  FileText,
+  FileSearch,
+  Ban,
+  MoreHorizontal,
+  Eye,
+  Copy,
+  X,
+  AlertTriangle,
+  Loader2,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import {
   Table,
   TableHeader,
@@ -38,14 +38,29 @@ import {
   Dialog,
   DialogContent,
   DialogHeader,
+  DialogBody,
   DialogTitle,
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { Textarea } from '@/components/ui/textarea';
-import { Label } from '@/components/ui/label';
+import { Field } from '@/components/ui/field';
+import { StatusBadge } from '@/components/ui/status-badge';
+import { PageHeader } from '@/components/ui/page-header';
+import { EmptyState } from '@/components/ui/empty-state';
+import { TableRowSkeleton } from '@/components/ui/skeleton';
+import { Segmented } from '@/components/ui/segmented';
+import { Pagination } from '@/components/ui/pagination';
+import { CopyButton } from '@/components/ui/copy-button';
 import { useToast } from '@/components/ui/use-toast';
-import { formatDate } from '@/lib/utils';
+import { formatDateShort, downloadCsv, getInitials } from '@/lib/utils';
 
 interface CertificateItem {
   id: string;
@@ -60,40 +75,49 @@ interface CertificateItem {
   createdAt: string;
 }
 
-export default function CertificatesListPage() {
+type StatusFilter = 'ALL' | 'VALID' | 'EXPIRED' | 'REVOKED';
+
+const PAGE_SIZE = 10;
+const MIN_REASON_LENGTH = 5;
+
+const STATUS_OPTIONS: { label: string; value: StatusFilter }[] = [
+  { label: 'All', value: 'ALL' },
+  { label: 'Valid', value: 'VALID' },
+  { label: 'Expired', value: 'EXPIRED' },
+  { label: 'Revoked', value: 'REVOKED' },
+];
+
+function CertificatesRegistry() {
   const { toast } = useToast();
+  const searchParams = useSearchParams();
 
-  // Filter & Pagination State
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
-  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [searchInput, setSearchInput] = useState(searchParams.get('search') ?? '');
+  const [search, setSearch] = useState(searchParams.get('search') ?? '');
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>(
+    (searchParams.get('status') as StatusFilter) || 'ALL'
+  );
   const [page, setPage] = useState(1);
-  const [limit] = useState(10);
 
-  // Data & Loading State
   const [certificates, setCertificates] = useState<CertificateItem[]>([]);
   const [total, setTotal] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Revoke Dialog State
-  const [selectedCertForRevoke, setSelectedCertForRevoke] =
-    useState<CertificateItem | null>(null);
+  const [revokeTarget, setRevokeTarget] = useState<CertificateItem | null>(null);
   const [revokeReason, setRevokeReason] = useState('');
+  const [revokeError, setRevokeError] = useState<string | null>(null);
   const [isRevoking, setIsRevoking] = useState(false);
-  const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
 
-  // Fetch certificates from API
+  const searchRef = useRef<HTMLInputElement>(null);
+
   const fetchCertificates = useCallback(async () => {
     setIsLoading(true);
     try {
       const params = new URLSearchParams();
       if (search) params.set('search', search);
-      if (statusFilter && statusFilter !== 'ALL')
-        params.set('status', statusFilter);
-      params.set('page', page.toString());
-      params.set('limit', limit.toString());
+      if (statusFilter !== 'ALL') params.set('status', statusFilter);
+      params.set('page', String(page));
+      params.set('limit', String(PAGE_SIZE));
 
       const res = await fetch(`/api/certificates?${params.toString()}`);
       const data = await res.json();
@@ -105,494 +129,477 @@ export default function CertificatesListPage() {
       } else {
         toast({
           variant: 'destructive',
-          title: 'Error loading registry',
-          description: data.message || 'Unable to retrieve certificates',
+          title: 'Could not load the registry',
+          description: data.message || 'The server returned an unexpected response.',
         });
       }
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Network Error',
-        description: err?.message || 'Failed to fetch certificates',
+        title: 'Network error',
+        description: err?.message || 'The registry could not be reached.',
       });
     } finally {
       setIsLoading(false);
     }
-  }, [search, statusFilter, page, limit, toast]);
+  }, [search, statusFilter, page, toast]);
 
   useEffect(() => {
     fetchCertificates();
   }, [fetchCertificates]);
 
-  const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const isFiltered = Boolean(search) || statusFilter !== 'ALL';
+
+  const resultSummary = useMemo(() => {
+    if (isLoading) return 'Loading records…';
+    if (total === 0) return 'No records';
+    return `${total} ${total === 1 ? 'record' : 'records'}`;
+  }, [isLoading, total]);
+
+  const handleSearchSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     setSearch(searchInput.trim());
     setPage(1);
   };
 
-  const handleResetSearch = () => {
+  const handleClearFilters = () => {
     setSearchInput('');
     setSearch('');
     setStatusFilter('ALL');
     setPage(1);
+    searchRef.current?.focus();
   };
 
-  const handleCopyId = (certId: string) => {
-    navigator.clipboard.writeText(certId);
-    setCopiedId(certId);
-    toast({
-      title: 'Copied to Clipboard',
-      description: `Certificate ID ${certId} copied.`,
-    });
-    setTimeout(() => setCopiedId(null), 2000);
-  };
-
-  const handleExportCSV = () => {
+  const handleExportCsv = () => {
     if (certificates.length === 0) {
       toast({
-        title: 'No Data to Export',
-        description: 'No certificates found for current filters.',
+        title: 'Nothing to export',
+        description: 'No records match the current filters.',
       });
       return;
     }
 
-    const headers = ['Certificate ID', 'Recipient Name', 'Recipient Email', 'Course Name', 'Status', 'Issue Date', 'Expiry Date'];
-    const rows = certificates.map((c) => [
-      c.certificateId,
-      `"${c.recipientName.replace(/"/g, '""')}"`,
-      c.recipientEmail,
-      `"${c.courseName.replace(/"/g, '""')}"`,
-      c.status,
-      c.issueDate ? c.issueDate.split('T')[0] : '',
-      c.expiryDate ? c.expiryDate.split('T')[0] : 'Lifetime',
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `citadel-registry-${statusFilter.toLowerCase()}-${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    downloadCsv(
+      `citadel-registry-${statusFilter.toLowerCase()}-${new Date()
+        .toISOString()
+        .slice(0, 10)}.csv`,
+      [
+        'Certificate ID',
+        'Recipient name',
+        'Recipient email',
+        'Course',
+        'Status',
+        'Issue date',
+        'Expiry date',
+      ],
+      certificates.map((c) => [
+        c.certificateId,
+        c.recipientName,
+        c.recipientEmail,
+        c.courseName,
+        c.status,
+        c.issueDate?.slice(0, 10) ?? '',
+        c.expiryDate?.slice(0, 10) ?? 'No expiry',
+      ])
+    );
 
     toast({
-      title: 'Registry Exported',
-      description: 'Downloaded certificate list as CSV.',
+      variant: 'success',
+      title: 'Registry exported',
+      description: `${certificates.length} records written to CSV.`,
     });
   };
 
   const openRevokeDialog = (cert: CertificateItem) => {
-    setSelectedCertForRevoke(cert);
+    setRevokeTarget(cert);
     setRevokeReason('');
-    setIsRevokeDialogOpen(true);
+    setRevokeError(null);
   };
 
-  const handleRevokeSubmit = async () => {
-    if (!selectedCertForRevoke) return;
+  const handleRevoke = async () => {
+    if (!revokeTarget) return;
 
-    if (!revokeReason.trim() || revokeReason.trim().length < 5) {
-      toast({
-        variant: 'destructive',
-        title: 'Revocation Reason Required',
-        description: 'Please provide a clear reason of at least 5 characters.',
-      });
+    if (revokeReason.trim().length < MIN_REASON_LENGTH) {
+      setRevokeError(
+        `Give an auditable reason of at least ${MIN_REASON_LENGTH} characters. It is stored permanently with the record.`
+      );
       return;
     }
 
     setIsRevoking(true);
-    try {
-      const res = await fetch(
-        `/api/certificates/${selectedCertForRevoke.id}/revoke`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ reason: revokeReason.trim() }),
-        }
-      );
+    setRevokeError(null);
 
+    try {
+      const res = await fetch(`/api/certificates/${revokeTarget.id}/revoke`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reason: revokeReason.trim() }),
+      });
       const data = await res.json();
 
       if (data.success) {
         toast({
-          title: 'Certificate Revoked on Blockchain',
-          description: `Certificate ${selectedCertForRevoke.certificateId} is now invalidated.`,
+          variant: 'success',
+          title: 'Certificate revoked',
+          description: `${revokeTarget.certificateId} is now marked revoked on-chain.`,
         });
-        setIsRevokeDialogOpen(false);
+        setRevokeTarget(null);
         fetchCertificates();
       } else {
-        toast({
-          variant: 'destructive',
-          title: 'Revocation Failed',
-          description: data.message || 'Unable to revoke on smart contract',
-        });
+        setRevokeError(data.message || 'The registry contract rejected the revocation.');
       }
     } catch (err: any) {
-      toast({
-        variant: 'destructive',
-        title: 'Revocation Error',
-        description: err?.message || 'Error communicating with network',
-      });
+      setRevokeError(err?.message || 'The network request failed. Try again.');
     } finally {
       setIsRevoking(false);
     }
   };
 
-  const getBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'VALID':
-        return 'valid';
-      case 'EXPIRED':
-        return 'expired';
-      case 'REVOKED':
-        return 'revoked';
-      default:
-        return 'secondary';
-    }
-  };
-
   return (
     <div className="space-y-6">
-      {/* Page Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl">
-            Certificate Registry
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Search, verify, and manage all blockchain-anchored credentials ({total} total records)
-          </p>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleExportCSV}
-            className="rounded-xl text-xs font-semibold border-slate-200 text-slate-700 hover:bg-slate-50"
-          >
-            <Download className="mr-1.5 h-3.5 w-3.5 text-slate-500" />
-            Export CSV
-          </Button>
-
-          <Link href="/dashboard/certificates/new">
-            <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md shadow-[#C8102E]/20 transition hover:scale-105 active:scale-95">
-              <PlusCircle className="mr-1.5 h-4 w-4" />
-              Issue New Certificate
+      <PageHeader
+        title="Certificate registry"
+        description="Every credential your organisation has issued, with its current on-chain state."
+        actions={
+          <>
+            <Button variant="outline" size="sm" onClick={handleExportCsv}>
+              <Download aria-hidden />
+              Export CSV
             </Button>
-          </Link>
-        </div>
-      </div>
+          </>
+        }
+      />
 
-      {/* Filter & Search Bar */}
-      <div className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5 shadow-xs space-y-4">
-        {/* Status Filter Tabs */}
-        <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
-            {[
-              { label: 'All Credentials', value: 'ALL' },
-              { label: 'Valid / Active', value: 'VALID' },
-              { label: 'Expired', value: 'EXPIRED' },
-              { label: 'Revoked', value: 'REVOKED' },
-            ].map((tab) => (
-              <button
-                key={tab.value}
-                onClick={() => {
-                  setStatusFilter(tab.value);
-                  setPage(1);
-                }}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all ${
-                  statusFilter === tab.value
-                    ? 'bg-[#C8102E] text-white shadow-xs'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-
-          <span className="text-xs text-slate-400 font-medium">
-            Showing page {page} of {totalPages}
-          </span>
-        </div>
-
-        {/* Search Bar Input */}
-        <form onSubmit={handleSearchSubmit} className="flex flex-col sm:flex-row gap-2.5">
-          <div className="relative flex-1">
-            <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+      {/* ---------------------------------------------------------------- */}
+      {/* Filter toolbar                                                   */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="rounded-xl border border-line bg-surface shadow-xs">
+        <div className="flex flex-col gap-3 p-4 lg:flex-row lg:items-center lg:justify-between">
+          <form onSubmit={handleSearchSubmit} className="flex flex-1 gap-2" role="search">
+            <label htmlFor="registry-search" className="sr-only">
+              Search the registry
+            </label>
             <Input
-              type="text"
-              placeholder="Search by recipient name, email, Certificate ID, or course title..."
+              id="registry-search"
+              ref={searchRef}
+              type="search"
+              placeholder="Search by recipient, email, course or certificate ID"
               value={searchInput}
-              onChange={(e) => setSearchInput(e.target.value)}
-              className="pl-10 h-10 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+              onChange={(event) => setSearchInput(event.target.value)}
+              leading={<Search />}
+              className="max-w-md"
             />
-          </div>
-
-          <div className="flex gap-2">
-            <Button
-              type="submit"
-              size="sm"
-              className="h-10 px-5 rounded-xl bg-slate-900 text-white font-bold text-xs hover:bg-slate-800"
-            >
+            <Button type="submit" variant="outline">
               Search
             </Button>
+          </form>
 
-            {(search || statusFilter !== 'ALL') && (
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={handleResetSearch}
-                className="h-10 rounded-xl text-xs font-semibold border-slate-200"
-              >
-                <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-                Reset
+          <div className="flex flex-wrap items-center gap-3">
+            <Segmented
+              aria-label="Filter by credential status"
+              options={STATUS_OPTIONS}
+              value={statusFilter}
+              onChange={(value) => {
+                setStatusFilter(value);
+                setPage(1);
+              }}
+            />
+            {isFiltered ? (
+              <Button variant="ghost" size="sm" onClick={handleClearFilters}>
+                <X aria-hidden />
+                Clear
               </Button>
-            )}
+            ) : null}
           </div>
-        </form>
+        </div>
+
+        <div className="flex items-center justify-between border-t border-line px-4 py-2">
+          <p className="text-xs text-ink-muted">
+            {resultSummary}
+            {isFiltered ? ' matching your filters' : ''}
+          </p>
+        </div>
       </div>
 
-      {/* Registry Table Card */}
-      <div className="rounded-2xl border border-slate-200 bg-white shadow-xs overflow-hidden">
+      {/* ---------------------------------------------------------------- */}
+      {/* Records                                                          */}
+      {/* ---------------------------------------------------------------- */}
+      <div className="overflow-hidden rounded-xl border border-line bg-surface shadow-xs">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-20 text-slate-400">
-            <Loader2 className="h-8 w-8 animate-spin text-[#C8102E]" />
-            <p className="mt-3 text-xs font-semibold">Loading certificate records...</p>
-          </div>
+          <Table>
+            <TableHeader>
+              <RegistryHeaderRow />
+            </TableHeader>
+            <TableBody>
+              <TableRowSkeleton columns={6} rows={PAGE_SIZE} />
+            </TableBody>
+          </Table>
         ) : certificates.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-center px-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 text-slate-400">
-              <FileBadge2 className="h-6 w-6" />
-            </div>
-            <h3 className="mt-4 text-base font-bold text-slate-900">
-              No matching certificates found
-            </h3>
-            <p className="mt-1 max-w-sm text-xs text-slate-500">
-              {search || statusFilter !== 'ALL'
-                ? 'Try adjusting your search criteria or filter tabs.'
-                : 'Get started by issuing your first blockchain credential.'}
-            </p>
-            {search || statusFilter !== 'ALL' ? (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleResetSearch}
-                className="mt-4 rounded-xl text-xs font-semibold"
-              >
-                Clear Filters
-              </Button>
-            ) : (
-              <Link href="/dashboard/certificates/new" className="mt-4">
-                <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white text-xs font-bold">
-                  <PlusCircle className="mr-1.5 h-4 w-4" />
-                  Issue Certificate
+          <EmptyState
+            icon={FileSearch}
+            title={isFiltered ? 'No matching records' : 'The registry is empty'}
+            description={
+              isFiltered
+                ? 'No credential matches this search and status combination. Try a broader query.'
+                : 'Once you issue a certificate it will appear here with its full audit trail.'
+            }
+            action={
+              isFiltered ? (
+                <Button variant="outline" size="sm" onClick={handleClearFilters}>
+                  Clear filters
                 </Button>
-              </Link>
-            )}
-          </div>
+              ) : (
+                <Button asChild size="sm">
+                  <Link href="/dashboard/certificates/new">
+                    <PlusCircle aria-hidden />
+                    Issue certificate
+                  </Link>
+                </Button>
+              )
+            }
+          />
         ) : (
-          <div>
+          <>
             <Table>
-              <TableHeader className="bg-slate-50/80 border-b border-slate-100">
-                <TableRow>
-                  <TableHead className="font-bold text-xs text-slate-700">Certificate ID</TableHead>
-                  <TableHead className="font-bold text-xs text-slate-700">Recipient</TableHead>
-                  <TableHead className="font-bold text-xs text-slate-700">Program / Degree</TableHead>
-                  <TableHead className="font-bold text-xs text-slate-700">Status</TableHead>
-                  <TableHead className="font-bold text-xs text-slate-700">Issue Date</TableHead>
-                  <TableHead className="font-bold text-xs text-slate-700">Expiry Date</TableHead>
-                  <TableHead className="text-right font-bold text-xs text-slate-700">Actions</TableHead>
-                </TableRow>
+              <TableHeader>
+                <RegistryHeaderRow />
               </TableHeader>
               <TableBody>
                 {certificates.map((cert) => (
-                  <TableRow key={cert.id} className="hover:bg-slate-50/70 transition-colors">
+                  <TableRow key={cert.id}>
                     <TableCell>
-                      <div className="flex items-center gap-1.5 font-mono text-xs font-bold text-[#C8102E]">
-                        <span>{cert.certificateId}</span>
-                        <button
-                          onClick={() => handleCopyId(cert.certificateId)}
-                          className="text-slate-400 hover:text-slate-600 transition"
-                          title="Copy ID"
-                        >
-                          {copiedId === cert.certificateId ? (
-                            <Check className="h-3 w-3 text-emerald-600" />
-                          ) : (
-                            <Copy className="h-3 w-3" />
-                          )}
-                        </button>
-                      </div>
-                    </TableCell>
-                    <TableCell>
-                      <div className="font-bold text-xs text-slate-900">{cert.recipientName}</div>
-                      <div className="text-[11px] text-slate-500 font-mono">{cert.recipientEmail}</div>
-                    </TableCell>
-                    <TableCell className="text-xs font-medium text-slate-800">
-                      {cert.courseName}
-                    </TableCell>
-                    <TableCell>
-                      <Badge variant={getBadgeVariant(cert.status) as any}>
-                        {cert.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600">
-                      {cert.issueDate ? formatDate(cert.issueDate) : 'N/A'}
-                    </TableCell>
-                    <TableCell className="text-xs text-slate-600 font-mono">
-                      {cert.expiryDate ? formatDate(cert.expiryDate) : 'Lifetime'}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-1.5">
+                      <div className="flex items-center gap-1">
                         <Link
                           href={`/dashboard/certificates/${cert.id}`}
-                          className="rounded-lg border border-slate-200 bg-white px-2.5 py-1 text-xs font-semibold text-slate-700 hover:bg-slate-50 hover:text-[#C8102E] transition shadow-2xs"
+                          className="metadata rounded-sm font-medium text-ink transition-colors hover:text-brand"
                         >
-                          View
+                          {cert.certificateId}
                         </Link>
-
-                        <Link
-                          href={`/verify/${encodeURIComponent(cert.certificateId)}`}
-                          target="_blank"
-                          className="rounded-lg border border-slate-200 bg-white p-1 text-slate-600 hover:text-[#C8102E] hover:bg-slate-50 transition"
-                          title="Verify Publicly"
-                        >
-                          <ExternalLink className="h-3.5 w-3.5" />
-                        </Link>
-
-                        {cert.status === 'VALID' && (
-                          <button
-                            onClick={() => openRevokeDialog(cert)}
-                            className="rounded-lg border border-rose-200 bg-rose-50 px-2 py-1 text-xs font-bold text-rose-600 hover:bg-rose-100 transition"
-                            title="Revoke Certificate"
-                          >
-                            Revoke
-                          </button>
-                        )}
+                        <CopyButton value={cert.certificateId} label="certificate ID" />
                       </div>
+                    </TableCell>
+
+                    <TableCell>
+                      <div className="flex items-center gap-2.5">
+                        <span
+                          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-surface-sunken text-2xs font-semibold text-ink-secondary"
+                          aria-hidden
+                        >
+                          {getInitials(cert.recipientName)}
+                        </span>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-medium text-ink">
+                            {cert.recipientName}
+                          </p>
+                          <p className="truncate text-xs text-ink-muted">
+                            {cert.recipientEmail}
+                          </p>
+                        </div>
+                      </div>
+                    </TableCell>
+
+                    <TableCell className="max-w-[240px]">
+                      <p className="truncate text-sm text-ink-secondary" title={cert.courseName}>
+                        {cert.courseName}
+                      </p>
+                    </TableCell>
+
+                    <TableCell>
+                      <StatusBadge status={cert.status} />
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap text-xs text-ink-muted">
+                      {formatDateShort(cert.issueDate)}
+                    </TableCell>
+
+                    <TableCell className="whitespace-nowrap text-xs text-ink-muted">
+                      {cert.expiryDate ? (
+                        formatDateShort(cert.expiryDate)
+                      ) : (
+                        <span className="text-ink-subtle">No expiry</span>
+                      )}
+                    </TableCell>
+
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon-sm"
+                            aria-label={`Actions for ${cert.certificateId}`}
+                          >
+                            <MoreHorizontal aria-hidden />
+                          </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuItem asChild>
+                            <Link href={`/dashboard/certificates/${cert.id}`}>
+                              <Eye aria-hidden />
+                              Open record
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem asChild>
+                            <Link
+                              href={`/verify/${encodeURIComponent(cert.certificateId)}`}
+                              target="_blank"
+                            >
+                              <ExternalLink aria-hidden />
+                              Public verification
+                            </Link>
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onSelect={() =>
+                              navigator.clipboard.writeText(cert.certificateId)
+                            }
+                          >
+                            <Copy aria-hidden />
+                            Copy certificate ID
+                          </DropdownMenuItem>
+
+                          {cert.status === 'VALID' ? (
+                            <>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem
+                                tone="danger"
+                                onSelect={() => openRevokeDialog(cert)}
+                              >
+                                <Ban aria-hidden />
+                                Revoke certificate
+                              </DropdownMenuItem>
+                            </>
+                          ) : null}
+                        </DropdownMenuContent>
+                      </DropdownMenu>
                     </TableCell>
                   </TableRow>
                 ))}
               </TableBody>
             </Table>
 
-            {/* Pagination Controls */}
-            {totalPages > 1 && (
-              <div className="flex items-center justify-between border-t border-slate-100 px-6 py-4">
-                <div className="text-xs text-slate-500">
-                  Page <span className="font-bold text-slate-900">{page}</span> of{' '}
-                  <span className="font-bold text-slate-900">{totalPages}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                    className="h-8 rounded-lg text-xs font-semibold border-slate-200"
-                  >
-                    <ChevronLeft className="mr-1 h-3.5 w-3.5" />
-                    Previous
-                  </Button>
-
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                    className="h-8 rounded-lg text-xs font-semibold border-slate-200"
-                  >
-                    Next
-                    <ChevronRight className="ml-1 h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            )}
-          </div>
+            {totalPages > 1 ? (
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                total={total}
+                pageSize={PAGE_SIZE}
+                onPageChange={setPage}
+                disabled={isLoading}
+              />
+            ) : null}
+          </>
         )}
       </div>
 
-      {/* Revocation Confirmation Dialog */}
-      <Dialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
+      {/* ---------------------------------------------------------------- */}
+      {/* Revocation                                                       */}
+      {/* ---------------------------------------------------------------- */}
+      <Dialog
+        open={Boolean(revokeTarget)}
+        onOpenChange={(open) => {
+          if (!open && !isRevoking) setRevokeTarget(null);
+        }}
+      >
+        <DialogContent>
           <DialogHeader>
-            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
-              <ShieldAlert className="h-6 w-6" />
-            </div>
-            <DialogTitle className="text-center text-lg font-[900] text-slate-900">
-              Revoke Blockchain Certificate
-            </DialogTitle>
-            <DialogDescription className="text-center text-xs text-slate-500">
-              This action will invoke the smart contract to permanently mark this certificate as <span className="font-bold text-rose-600">REVOKED</span> on Ethereum.
+            <DialogTitle>Revoke this certificate?</DialogTitle>
+            <DialogDescription>
+              Revocation is written to the blockchain and cannot be undone. Anyone
+              verifying this credential from now on will see it as revoked, together
+              with the reason you record below.
             </DialogDescription>
           </DialogHeader>
 
-          {selectedCertForRevoke && (
-            <div className="space-y-4 pt-2">
-              <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-xs space-y-1 font-mono">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Certificate ID:</span>
-                  <span className="font-bold text-[#C8102E]">{selectedCertForRevoke.certificateId}</span>
+          {revokeTarget ? (
+            <DialogBody>
+              <dl className="rounded-lg border border-line bg-surface-muted/60 p-3 text-sm">
+                <div className="flex items-baseline justify-between gap-4 py-1">
+                  <dt className="text-xs text-ink-muted">Certificate</dt>
+                  <dd className="metadata font-medium text-ink">
+                    {revokeTarget.certificateId}
+                  </dd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Recipient:</span>
-                  <span className="font-bold text-slate-800">{selectedCertForRevoke.recipientName}</span>
+                <div className="flex items-baseline justify-between gap-4 py-1">
+                  <dt className="text-xs text-ink-muted">Recipient</dt>
+                  <dd className="truncate font-medium text-ink">
+                    {revokeTarget.recipientName}
+                  </dd>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Course:</span>
-                  <span className="text-slate-700 truncate max-w-[200px]">{selectedCertForRevoke.courseName}</span>
+                <div className="flex items-baseline justify-between gap-4 py-1">
+                  <dt className="text-xs text-ink-muted">Course</dt>
+                  <dd className="truncate text-ink-secondary">
+                    {revokeTarget.courseName}
+                  </dd>
                 </div>
-              </div>
+              </dl>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="revokeReason" className="text-xs font-bold text-slate-700">
-                  Revocation Reason <span className="text-rose-500">*</span>
-                </Label>
+              <Field
+                htmlFor="revoke-reason"
+                label="Reason for revocation"
+                required
+                error={revokeError}
+                hint="Recorded permanently and shown on the public verification page."
+              >
                 <Textarea
-                  id="revokeReason"
-                  placeholder="State the official audit reason (e.g. Academic misconduct, degree reissuance, clerical error)..."
-                  value={revokeReason}
-                  onChange={(e) => setRevokeReason(e.target.value)}
+                  id="revoke-reason"
+                  autoFocus
                   rows={3}
-                  className="text-xs rounded-xl border-slate-200 focus:border-rose-500"
+                  placeholder="e.g. Issued in error — superseded by CERT-2026-XXXXX"
+                  value={revokeReason}
+                  invalid={Boolean(revokeError)}
+                  onChange={(event) => {
+                    setRevokeReason(event.target.value);
+                    if (revokeError) setRevokeError(null);
+                  }}
                 />
-              </div>
-            </div>
-          )}
+              </Field>
+            </DialogBody>
+          ) : null}
 
-          <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
+          <DialogFooter>
             <Button
-              type="button"
               variant="outline"
-              size="sm"
-              onClick={() => setIsRevokeDialogOpen(false)}
+              onClick={() => setRevokeTarget(null)}
               disabled={isRevoking}
-              className="rounded-xl text-xs font-semibold border-slate-200"
             >
               Cancel
             </Button>
-            <Button
-              type="button"
-              size="sm"
-              onClick={handleRevokeSubmit}
-              disabled={isRevoking}
-              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs"
-            >
-              {isRevoking ? (
-                <>
-                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                  Mining Invalidation...
-                </>
-              ) : (
-                'Confirm On-Chain Revocation'
-              )}
+            <Button variant="destructive" onClick={handleRevoke} loading={isRevoking}>
+              {isRevoking ? 'Revoking…' : 'Revoke certificate'}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
+  );
+}
+
+function RegistryHeaderRow() {
+  return (
+    <TableRow>
+      <TableHead>Certificate ID</TableHead>
+      <TableHead>Recipient</TableHead>
+      <TableHead>Course</TableHead>
+      <TableHead>Status</TableHead>
+      <TableHead>Issued</TableHead>
+      <TableHead>Expires</TableHead>
+      <TableHead className="text-right">
+        <span className="sr-only">Actions</span>
+      </TableHead>
+    </TableRow>
+  );
+}
+
+export default function CertificatesListPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex justify-center py-24">
+          <Loader2 className="h-5 w-5 animate-spin text-brand" aria-hidden />
+          <span className="sr-only">Loading registry</span>
+        </div>
+      }
+    >
+      <CertificatesRegistry />
+    </Suspense>
   );
 }
