@@ -3,7 +3,17 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Building2, Loader2, AlertCircle, Lock, Mail, ArrowRight, CheckCircle2 } from 'lucide-react';
+import {
+  Building2,
+  Loader2,
+  AlertCircle,
+  Lock,
+  Mail,
+  User,
+  CheckCircle2,
+  Globe,
+  ArrowRight,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,6 +39,7 @@ export default function RegisterPage() {
     email: '',
     password: '',
     confirmPassword: '',
+    website: '',
   });
 
   const [isLoading, setIsLoading] = useState(false);
@@ -36,58 +47,37 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({
-      ...prev,
-      [e.target.name]: e.target.value,
-    }));
-    if (errorMessage) setErrorMessage(null);
-  };
-
-  const validateForm = (): boolean => {
-    if (!formData.name.trim() || formData.name.trim().length < 2) {
-      setErrorMessage('Organization Name must be at least 2 characters.');
-      return false;
-    }
-
-    if (!formData.email.trim()) {
-      setErrorMessage('Email address is required.');
-      return false;
-    }
-
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(formData.email.trim())) {
-      setErrorMessage('Please enter a valid email address.');
-      return false;
-    }
-
-    if (!formData.password) {
-      setErrorMessage('Password is required.');
-      return false;
-    }
-
-    if (formData.password.length < 6) {
-      setErrorMessage('Password must be at least 6 characters long.');
-      return false;
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      setErrorMessage('Passwords do not match. Please re-enter.');
-      return false;
-    }
-
-    return true;
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    setErrorMessage(null);
+    setSuccessMessage(null);
 
-    if (!validateForm()) {
+    // Validation
+    if (!formData.name.trim()) {
+      setErrorMessage('Organization name is required.');
+      return;
+    }
+
+    if (!formData.email.trim() || !formData.email.includes('@')) {
+      setErrorMessage('A valid email address is required.');
+      return;
+    }
+
+    if (formData.password.length < 8) {
+      setErrorMessage('Password must be at least 8 characters long.');
+      return;
+    }
+
+    if (formData.password !== formData.confirmPassword) {
+      setErrorMessage('Passwords do not match.');
       return;
     }
 
     setIsLoading(true);
-    setErrorMessage(null);
-    setSuccessMessage(null);
 
     try {
       // 1. Sign up with Supabase Auth
@@ -162,145 +152,147 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card className="w-full border-slate-200 bg-white shadow-xl">
-      <CardHeader className="space-y-2 text-center pb-6">
+    <Card className="w-full border-slate-200/90 bg-white shadow-xl rounded-3xl overflow-hidden">
+      <CardHeader className="space-y-2 text-center pb-6 bg-slate-50/70 border-b border-slate-100">
         <div className="mx-auto mb-2 flex items-center justify-center">
-          <CitadelLogo className="h-14 w-14" />
+          <CitadelLogo className="h-14 w-14" size={64} />
         </div>
-        <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
+        <CardTitle className="text-2xl font-[900] tracking-tight text-slate-900">
           Register Organization
         </CardTitle>
-        <CardDescription className="text-slate-500">
-          Create an issuer account to anchor certificates to the blockchain
+        <CardDescription className="text-xs text-slate-500">
+          Create an issuer account to anchor certificates to Ethereum
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMessage && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3.5 text-sm text-red-700 animate-in fade-in-50">
+            <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 animate-in fade-in-50">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           {successMessage && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-emerald-200 bg-emerald-50 p-3.5 text-sm text-emerald-700 animate-in fade-in-50">
-              <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-emerald-500" />
+            <div className="flex items-start gap-2.5 rounded-2xl border border-emerald-200 bg-emerald-50 p-3.5 text-xs text-emerald-700 animate-in fade-in-50">
+              <CheckCircle2 className="h-4 w-4 mt-0.5 shrink-0 text-emerald-600" />
               <span>{successMessage}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="name" className="text-sm font-medium text-slate-700">
-              Organization Name
+            <Label htmlFor="name" className="text-xs font-bold text-slate-700">
+              Organization / Institution Name <span className="text-rose-500">*</span>
             </Label>
             <div className="relative">
-              <Building2 className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Building2 className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="name"
                 name="name"
                 type="text"
-                placeholder="e.g. Oxford Academy / Tech University"
+                placeholder="e.g. Oxford Institute of Technology"
                 value={formData.name}
                 onChange={handleChange}
-                disabled={isLoading || Boolean(successMessage)}
+                disabled={isLoading}
                 required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-sm font-medium text-slate-700">
-              Official Email Address
+            <Label htmlFor="email" className="text-xs font-bold text-slate-700">
+              Organization Official Email <span className="text-rose-500">*</span>
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="issuer@organization.com"
+                placeholder="admin@oxford.edu"
                 value={formData.email}
                 onChange={handleChange}
-                disabled={isLoading || Boolean(successMessage)}
+                disabled={isLoading}
+                autoComplete="email"
                 required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
               />
             </div>
           </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="password" className="text-sm font-medium text-slate-700">
-              Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="At least 6 characters"
-                value={formData.password}
-                onChange={handleChange}
-                disabled={isLoading || Boolean(successMessage)}
-                required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
-              />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="space-y-1.5">
+              <Label htmlFor="password" className="text-xs font-bold text-slate-700">
+                Password <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="password"
+                  name="password"
+                  type="password"
+                  placeholder="Min 8 chars"
+                  value={formData.password}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  autoComplete="new-password"
+                  required
+                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
+                />
+              </div>
             </div>
-          </div>
 
-          <div className="space-y-1.5">
-            <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
-              Confirm Password
-            </Label>
-            <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="Confirm your password"
-                value={formData.confirmPassword}
-                onChange={handleChange}
-                disabled={isLoading || Boolean(successMessage)}
-                required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
-              />
+            <div className="space-y-1.5">
+              <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">
+                Confirm Password <span className="text-rose-500">*</span>
+              </Label>
+              <div className="relative">
+                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                <Input
+                  id="confirmPassword"
+                  name="confirmPassword"
+                  type="password"
+                  placeholder="Re-enter"
+                  value={formData.confirmPassword}
+                  onChange={handleChange}
+                  disabled={isLoading}
+                  autoComplete="new-password"
+                  required
+                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
+                />
+              </div>
             </div>
           </div>
 
           <Button
             type="submit"
-            disabled={isLoading || Boolean(successMessage)}
-            className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            disabled={isLoading}
+            className="w-full h-11 rounded-full bg-[#C8102E] text-white hover:bg-[#9E1B32] font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95 mt-2"
           >
             {isLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Creating Organization...
+                Creating Authority Account...
               </>
             ) : (
-              <>
-                Create Account
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
+              'Create Organization Account'
             )}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter className="flex flex-col border-t border-slate-100 bg-slate-50/50 p-6 text-center text-sm text-slate-600">
-        <p>
-          Already have an account?{' '}
+      <CardFooter className="flex flex-col space-y-3 border-t border-slate-100 bg-slate-50/50 py-4 text-center text-xs text-slate-600">
+        <div>
+          Already have an organization account?{' '}
           <Link
             href="/login"
-            className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+            className="font-bold text-[#C8102E] hover:text-[#9E1B32] hover:underline"
           >
-            Sign In here
+            Sign in here
           </Link>
-        </p>
+        </div>
       </CardFooter>
     </Card>
   );

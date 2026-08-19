@@ -3,7 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lock, Loader2, AlertCircle, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Lock, Loader2, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -89,28 +89,28 @@ export default function ResetPasswordPage() {
   };
 
   return (
-    <Card className="w-full border-slate-200 bg-white shadow-xl">
-      <CardHeader className="space-y-2 text-center pb-6">
+    <Card className="w-full border-slate-200/90 bg-white shadow-xl rounded-3xl overflow-hidden">
+      <CardHeader className="space-y-2 text-center pb-6 bg-slate-50/70 border-b border-slate-100">
         <div className="mx-auto mb-2 flex items-center justify-center">
-          <CitadelLogo className="h-14 w-14" />
+          <CitadelLogo className="h-14 w-14" size={64} />
         </div>
-        <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
+        <CardTitle className="text-2xl font-[900] tracking-tight text-slate-900">
           Create New Password
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className="text-xs text-slate-500">
           Please enter your new secure password below
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         {isSuccess ? (
-          <div className="space-y-4 text-center">
-            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-emerald-100 text-emerald-600">
-              <CheckCircle2 className="h-6 w-6" />
+          <div className="space-y-4 text-center py-4">
+            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
+              <CheckCircle2 className="h-7 w-7" />
             </div>
             <div className="space-y-1">
-              <h3 className="text-base font-semibold text-slate-900">Password Changed!</h3>
-              <p className="text-sm text-slate-600">
+              <h3 className="text-base font-[900] text-slate-900">Password Changed!</h3>
+              <p className="text-xs text-slate-600">
                 You are being redirected to your organization dashboard...
               </p>
             </div>
@@ -118,50 +118,50 @@ export default function ResetPasswordPage() {
         ) : (
           <form onSubmit={handleSubmit} className="space-y-4">
             {errorMessage && (
-              <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3.5 text-sm text-red-700 animate-in fade-in-50">
+              <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 animate-in fade-in-50">
                 <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
                 <span>{errorMessage}</span>
               </div>
             )}
 
             <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="password" className="text-xs font-bold text-slate-700">
                 New Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="At least 6 characters"
+                  placeholder="Minimum 8 characters"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
-                  className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
                 />
               </div>
             </div>
 
             <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">
                 Confirm New Password
               </Label>
               <div className="relative">
-                <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                 <Input
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
-                  placeholder="Confirm new password"
+                  placeholder="Re-enter your password"
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   disabled={isLoading}
                   autoComplete="new-password"
                   required
-                  className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
                 />
               </div>
             </div>
@@ -169,7 +169,7 @@ export default function ResetPasswordPage() {
             <Button
               type="submit"
               disabled={isLoading}
-              className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+              className="w-full h-11 rounded-full bg-[#C8102E] text-white hover:bg-[#9E1B32] font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
             >
               {isLoading ? (
                 <>
@@ -177,20 +177,17 @@ export default function ResetPasswordPage() {
                   Updating Password...
                 </>
               ) : (
-                <>
-                  Save New Password
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </>
+                'Save New Password'
               )}
             </Button>
           </form>
         )}
       </CardContent>
 
-      <CardFooter className="flex flex-col border-t border-slate-100 bg-slate-50/50 p-6 text-center text-sm text-slate-600">
+      <CardFooter className="flex justify-center border-t border-slate-100 bg-slate-50/50 py-4 text-center text-xs">
         <Link
           href="/login"
-          className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+          className="font-bold text-slate-700 hover:text-[#C8102E] transition"
         >
           Back to Sign In
         </Link>

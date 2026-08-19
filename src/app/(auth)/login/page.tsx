@@ -34,18 +34,12 @@ function LoginForm() {
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setErrorMessage(null);
-
-    if (!email.trim() || !password) {
-      setErrorMessage('Please enter both your email address and password.');
-      return;
-    }
-
     setIsLoading(true);
 
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim().toLowerCase(),
-        password,
+        password: password,
       });
 
       if (error) {
@@ -80,63 +74,63 @@ function LoginForm() {
   };
 
   return (
-    <Card className="w-full border-slate-200 bg-white shadow-xl">
-      <CardHeader className="space-y-2 text-center pb-6">
+    <Card className="w-full border-slate-200/90 bg-white shadow-xl rounded-3xl overflow-hidden">
+      <CardHeader className="space-y-2 text-center pb-6 bg-slate-50/70 border-b border-slate-100">
         <div className="mx-auto mb-2 flex items-center justify-center">
-          <CitadelLogo className="h-14 w-14" />
+          <CitadelLogo className="h-14 w-14" size={64} />
         </div>
-        <CardTitle className="text-2xl font-bold tracking-tight text-slate-900">
+        <CardTitle className="text-2xl font-[900] tracking-tight text-slate-900">
           Organization Sign In
         </CardTitle>
-        <CardDescription className="text-slate-500">
+        <CardDescription className="text-xs text-slate-500">
           Enter your organization credentials to manage and issue certificates
         </CardDescription>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="pt-6">
         <form onSubmit={handleSubmit} className="space-y-4">
           {errorMessage && (
-            <div className="flex items-start gap-2.5 rounded-lg border border-red-200 bg-red-50 p-3.5 text-sm text-red-700 animate-in fade-in-50">
+            <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 animate-in fade-in-50">
               <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
               <span>{errorMessage}</span>
             </div>
           )}
 
           <div className="space-y-1.5">
-            <Label htmlFor="email" className="text-sm font-medium text-slate-700">
+            <Label htmlFor="email" className="text-xs font-bold text-slate-700">
               Email Address
             </Label>
             <div className="relative">
-              <Mail className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="email"
                 name="email"
                 type="email"
-                placeholder="org@example.com"
+                placeholder="org@oxford.edu"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={isLoading}
                 autoComplete="email"
                 required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
               />
             </div>
           </div>
 
           <div className="space-y-1.5">
             <div className="flex items-center justify-between">
-              <Label htmlFor="password" className="text-sm font-medium text-slate-700">
+              <Label htmlFor="password" className="text-xs font-bold text-slate-700">
                 Password
               </Label>
               <Link
                 href="/forgot-password"
-                className="text-xs font-medium text-blue-600 hover:text-blue-700 hover:underline"
+                className="text-xs font-bold text-[#C8102E] hover:text-[#9E1B32] hover:underline"
               >
                 Forgot password?
               </Link>
             </div>
             <div className="relative">
-              <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+              <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
               <Input
                 id="password"
                 name="password"
@@ -147,7 +141,7 @@ function LoginForm() {
                 disabled={isLoading}
                 autoComplete="current-password"
                 required
-                className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
               />
             </div>
           </div>
@@ -155,7 +149,7 @@ function LoginForm() {
           <Button
             type="submit"
             disabled={isLoading}
-            className="w-full bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+            className="w-full h-11 rounded-full bg-[#C8102E] text-white hover:bg-[#9E1B32] font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
           >
             {isLoading ? (
               <>
@@ -163,25 +157,32 @@ function LoginForm() {
                 Signing In...
               </>
             ) : (
-              <>
-                Sign In
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </>
+              'Sign In to Dashboard'
             )}
           </Button>
         </form>
       </CardContent>
 
-      <CardFooter className="flex flex-col border-t border-slate-100 bg-slate-50/50 p-6 text-center text-sm text-slate-600">
-        <p>
-          Don&apos;t have an organization account yet?{' '}
+      <CardFooter className="flex flex-col space-y-3 border-t border-slate-100 bg-slate-50/50 py-4 text-center text-xs text-slate-600">
+        <div>
+          Don&apos;t have an organization account?{' '}
           <Link
             href="/register"
-            className="font-semibold text-blue-600 hover:text-blue-700 hover:underline"
+            className="font-bold text-[#C8102E] hover:text-[#9E1B32] hover:underline"
           >
-            Register your Organization
+            Register your institution
           </Link>
-        </p>
+        </div>
+
+        <div>
+          Looking to verify a student diploma?{' '}
+          <Link
+            href="/verify"
+            className="font-bold text-slate-800 hover:text-[#C8102E] hover:underline"
+          >
+            Open Public Verification
+          </Link>
+        </div>
       </CardFooter>
     </Card>
   );
@@ -191,10 +192,9 @@ export default function LoginPage() {
   return (
     <Suspense
       fallback={
-        <Card className="w-full border-slate-200 bg-white shadow-xl p-12 text-center">
-          <Loader2 className="mx-auto h-8 w-8 animate-spin text-blue-600" />
-          <p className="mt-4 text-sm text-slate-500">Loading sign in form...</p>
-        </Card>
+        <div className="flex h-64 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-[#C8102E]" />
+        </div>
       }
     >
       <LoginForm />

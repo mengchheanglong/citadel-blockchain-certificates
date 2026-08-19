@@ -13,6 +13,7 @@ import {
   Lock,
   X,
   AlertCircle,
+  Sparkles,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -62,7 +63,6 @@ export default function VerifyEntryPage() {
     let scanner: Html5QrcodeScanner | null = null;
 
     if (isScanning) {
-      // Small timeout to ensure DOM container #qr-reader is mounted
       const timer = setTimeout(() => {
         try {
           scanner = new Html5QrcodeScanner(
@@ -102,13 +102,13 @@ export default function VerifyEntryPage() {
   }, [isScanning, router]);
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900">
+    <div className="flex min-h-screen flex-col bg-slate-50 text-slate-900 font-sans antialiased">
       {/* Navigation Header */}
       <header className="sticky top-0 z-40 w-full border-b border-slate-200 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
+        <div className="container mx-auto flex h-20 max-w-6xl items-center justify-between px-6 sm:px-8">
           <Link
             href="/"
-            className="flex items-center gap-2 text-sm font-medium text-slate-600 transition hover:text-blue-600"
+            className="flex items-center gap-2 text-xs font-bold text-slate-600 transition hover:text-[#C8102E]"
           >
             <ArrowLeft className="h-4 w-4" />
             <span>Back to Home</span>
@@ -122,7 +122,7 @@ export default function VerifyEntryPage() {
           </Link>
 
           <Link href="/login">
-            <Button variant="outline" size="sm" className="text-xs">
+            <Button variant="outline" size="sm" className="rounded-full text-xs font-semibold border-slate-200 text-slate-700 hover:text-slate-900">
               Issuer Login
             </Button>
           </Link>
@@ -130,30 +130,30 @@ export default function VerifyEntryPage() {
       </header>
 
       {/* Main Content */}
-      <main className="flex-1 py-12 sm:py-16">
+      <main className="flex-1 py-14 sm:py-20">
         <div className="container mx-auto max-w-xl px-4 sm:px-6">
           {/* Heading */}
-          <div className="text-center">
-            <div className="inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-3.5 py-1.5 text-xs font-medium text-blue-700 shadow-xs mb-4">
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center gap-2 rounded-full border border-[#C8102E]/30 bg-[#C8102E]/10 px-3.5 py-1 text-xs font-bold text-[#C8102E] shadow-2xs">
               <Lock className="h-3.5 w-3.5" />
               <span>Public Verification Engine</span>
             </div>
-            <h1 className="text-3xl font-extrabold tracking-tight text-slate-900 sm:text-4xl">
+            <h1 className="text-3xl font-[900] tracking-tight text-slate-900 sm:text-4xl">
               Verify a Certificate
             </h1>
-            <p className="mt-3 text-sm text-slate-600 sm:text-base">
-              Enter a Certificate ID or scan a QR code to verify its authenticity directly against the Ethereum blockchain.
+            <p className="text-xs text-slate-600 sm:text-sm max-w-md mx-auto leading-relaxed">
+              Enter a Certificate ID or scan a diploma QR code to verify its cryptographic authenticity directly against Ethereum.
             </p>
           </div>
 
           {/* Verification Box */}
-          <Card className="mt-8 border-slate-200 bg-white shadow-md">
-            <CardContent className="pt-6 space-y-6">
+          <Card className="mt-8 border-slate-200/90 bg-white shadow-md rounded-3xl overflow-hidden">
+            <CardContent className="pt-7 p-7 space-y-6">
               {/* Form Input */}
               <form onSubmit={handleVerifySubmit} className="space-y-4">
                 <div className="space-y-2">
                   <div className="relative">
-                    <Search className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                    <Search className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                     <Input
                       type="text"
                       placeholder="Enter Certificate ID (e.g., CERT-2026-A3B7K)"
@@ -162,13 +162,13 @@ export default function VerifyEntryPage() {
                         setCertificateIdInput(e.target.value);
                         if (errorMessage) setErrorMessage('');
                       }}
-                      className="pl-10 h-12 text-sm font-mono placeholder:font-sans"
+                      className="pl-11 h-12 text-xs sm:text-sm font-mono rounded-2xl border-slate-200 focus:border-[#C8102E]"
                       autoFocus
                     />
                   </div>
 
                   {errorMessage && (
-                    <div className="flex items-center gap-1.5 text-xs text-rose-600">
+                    <div className="flex items-center gap-1.5 text-xs text-rose-600 pl-1">
                       <AlertCircle className="h-3.5 w-3.5" />
                       <span>{errorMessage}</span>
                     </div>
@@ -177,7 +177,7 @@ export default function VerifyEntryPage() {
 
                 <Button
                   type="submit"
-                  className="w-full h-11 bg-blue-600 text-white hover:bg-blue-700 font-medium shadow-sm"
+                  className="w-full h-12 rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
                 >
                   <Search className="mr-2 h-4 w-4" />
                   Verify Certificate
@@ -187,7 +187,7 @@ export default function VerifyEntryPage() {
               {/* OR Divider */}
               <div className="relative flex items-center justify-center">
                 <div className="w-full border-t border-slate-200" />
-                <span className="relative bg-white px-3 text-xs uppercase font-semibold text-slate-400">
+                <span className="relative bg-white px-3 text-[10px] uppercase font-bold tracking-widest text-slate-400">
                   OR
                 </span>
               </div>
@@ -198,16 +198,16 @@ export default function VerifyEntryPage() {
                   type="button"
                   variant="outline"
                   onClick={() => setIsScanning(true)}
-                  className="w-full h-11 border-slate-300 text-slate-700 hover:bg-slate-50 gap-2 font-medium"
+                  className="w-full h-12 rounded-full border-slate-200 text-slate-700 hover:bg-slate-50 gap-2 font-bold text-xs"
                 >
-                  <QrCode className="h-5 w-5 text-blue-600" />
-                  <span>Scan QR Code</span>
+                  <QrCode className="h-4 w-4 text-[#C8102E]" />
+                  <span>Scan Diploma QR Code</span>
                 </Button>
               ) : (
-                <div className="space-y-3 rounded-lg border border-blue-200 bg-slate-50 p-4 text-center">
+                <div className="space-y-3 rounded-2xl border border-[#C8102E]/30 bg-slate-50 p-5 text-center">
                   <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
-                      <QrCode className="h-4 w-4 text-blue-600" />
+                    <div className="flex items-center gap-2 text-xs font-bold text-slate-800">
+                      <QrCode className="h-4 w-4 text-[#C8102E]" />
                       <span>Camera Scanner Active</span>
                     </div>
                     <Button
@@ -221,13 +221,13 @@ export default function VerifyEntryPage() {
                     </Button>
                   </div>
 
-                  <p className="text-xs text-slate-500">
+                  <p className="text-[11px] text-slate-500">
                     Point your camera at the QR code printed on the certificate.
                   </p>
 
                   <div
                     id="qr-reader"
-                    className="overflow-hidden rounded-md border border-slate-200 bg-white"
+                    className="overflow-hidden rounded-xl border border-slate-200 bg-white"
                   />
 
                   <Button
@@ -235,7 +235,7 @@ export default function VerifyEntryPage() {
                     variant="outline"
                     size="sm"
                     onClick={() => setIsScanning(false)}
-                    className="w-full text-xs"
+                    className="w-full rounded-full text-xs font-semibold"
                   >
                     Cancel Scan
                   </Button>
@@ -246,25 +246,25 @@ export default function VerifyEntryPage() {
 
           {/* Verification Benefits Cards */}
           <div className="mt-8 grid gap-3 text-xs text-slate-600 sm:grid-cols-2">
-            <div className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-900">
+                <span className="font-bold text-slate-900 block">
                   Instant Blockchain Validation
                 </span>
-                <p className="mt-0.5 text-slate-500">
+                <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">
                   Cryptographically matches against the immutable smart contract registry.
                 </p>
               </div>
             </div>
 
-            <div className="flex items-start gap-2.5 rounded-lg border border-slate-200 bg-white p-3.5 shadow-xs">
+            <div className="flex items-start gap-3 rounded-2xl border border-slate-200 bg-white p-4 shadow-2xs">
               <CheckCircle2 className="h-4 w-4 text-emerald-600 shrink-0 mt-0.5" />
               <div>
-                <span className="font-semibold text-slate-900">
+                <span className="font-bold text-slate-900 block">
                   Zero Trust Required
                 </span>
-                <p className="mt-0.5 text-slate-500">
+                <p className="mt-0.5 text-[11px] text-slate-500 leading-relaxed">
                   Completely transparent, independent verification without intermediaries.
                 </p>
               </div>
@@ -275,9 +275,7 @@ export default function VerifyEntryPage() {
 
       {/* Footer */}
       <footer className="border-t border-slate-200 bg-white py-6 text-center text-xs text-slate-500">
-          <p>
-            &copy; {new Date().getFullYear()} Citadel. Powered by Ethereum smart contracts.
-          </p>
+        &copy; {new Date().getFullYear()} Citadel. Immutable blockchain credentialing.
       </footer>
     </div>
   );
