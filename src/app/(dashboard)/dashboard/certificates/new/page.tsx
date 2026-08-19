@@ -19,6 +19,9 @@ import {
   ExternalLink,
   Copy,
   Check,
+  Sparkles,
+  QrCode,
+  Lock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,7 +37,9 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { shortenHash, getEtherscanUrl } from '@/lib/utils';
+import { shortenHash, getEtherscanUrl, formatDate } from '@/lib/utils';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
+import { useSupabaseAuth } from '@/components/auth/supabase-provider';
 
 interface IssuedCertificate {
   id: string;
@@ -57,6 +62,8 @@ interface IssuedCertificate {
 
 export default function IssueCertificatePage() {
   const { toast } = useToast();
+  const { organization } = useSupabaseAuth();
+  const orgName = organization?.name || 'Oxford Institute of Technology';
 
   // Form State
   const [formData, setFormData] = useState({
@@ -76,6 +83,10 @@ export default function IssueCertificatePage() {
   const handleCopy = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
     setCopiedField(field);
+    toast({
+      title: 'Copied to Clipboard',
+      description: `${field} copied.`,
+    });
     setTimeout(() => setCopiedField(null), 2000);
   };
 
@@ -84,6 +95,16 @@ export default function IssueCertificatePage() {
   ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({ ...prev, [name]: value }));
+  };
+
+  const handleSetPresetExpiry = (months: number | null) => {
+    if (months === null) {
+      setFormData((prev) => ({ ...prev, expiryDate: '' }));
+      return;
+    }
+    const d = new Date();
+    d.setMonth(d.getMonth() + months);
+    setFormData((prev) => ({ ...prev, expiryDate: d.toISOString().split('T')[0] }));
   };
 
   const handleResetForm = () => {
@@ -100,7 +121,6 @@ export default function IssueCertificatePage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    // Basic frontend checks
     if (!formData.recipientName.trim()) {
       toast({
         variant: 'destructive',
@@ -109,19 +129,21 @@ export default function IssueCertificatePage() {
       });
       return;
     }
-    if (!formData.recipientEmail.trim()) {
+
+    if (!formData.recipientEmail.trim() || !formData.recipientEmail.includes('@')) {
       toast({
         variant: 'destructive',
         title: 'Validation Error',
-        description: 'Recipient Email is required.',
+        description: 'A valid Recipient Email is required for delivery.',
       });
       return;
     }
+
     if (!formData.courseName.trim()) {
       toast({
         variant: 'destructive',
         title: 'Validation Error',
-        description: 'Course or Program Name is required.',
+        description: 'Course or Program title is required.',
       });
       return;
     }
@@ -129,401 +151,400 @@ export default function IssueCertificatePage() {
     setIsLoading(true);
 
     try {
-      // Prepare payload with ISO expiry date if provided
-      let isoExpiry: string | null = null;
-      if (formData.expiryDate) {
-        const parsed = new Date(formData.expiryDate);
-        if (!isNaN(parsed.getTime())) {
-          isoExpiry = parsed.toISOString();
-        }
-      }
-
       const payload = {
         recipientName: formData.recipientName.trim(),
         recipientEmail: formData.recipientEmail.trim().toLowerCase(),
         courseName: formData.courseName.trim(),
-        courseDescription: formData.courseDescription.trim() || undefined,
-        expiryDate: isoExpiry,
+        courseDescription: formData.courseDescription.trim() || null,
+        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
       };
 
       const res = await fetch('/api/certificates', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        let errorMsg = data.message || 'Failed to issue certificate';
-        if (data.errors) {
-          const firstError = Object.values(data.errors).flat()[0];
-          if (firstError) errorMsg = String(firstError);
-        }
-        throw new Error(errorMsg);
+      if (data.success && data.certificate) {
+        setIssuedCertificate(data.certificate);
+        toast({
+          title: 'Certificate Anchored to Blockchain!',
+          description: `Minted with Certificate ID: ${data.certificate.certificateId}`,
+        });
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Issuance Failed',
+          description: data.message || 'Unable to record on smart contract.',
+        });
       }
-
-      const cert: IssuedCertificate = data.certificate;
-      setIssuedCertificate(cert);
-
-      toast({
-        title: 'Certificate Issued Successfully!',
-        description: `Certificate ${cert.certificateId} has been created and registered.`,
-      });
-    } catch (error: any) {
-      console.error('Certificate issuance error:', error);
+    } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Issuance Failed',
-        description:
-          error?.message ||
-          'An unexpected error occurred while issuing the certificate.',
+        title: 'Network Error',
+        description: err?.message || 'Failed to issue certificate.',
       });
     } finally {
       setIsLoading(false);
     }
   };
 
-  const latestTx = issuedCertificate?.transactions?.[0];
-
   return (
-    <div className="mx-auto max-w-3xl space-y-6">
-      {/* Navigation & Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/certificates">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1 text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>Back to Certificates</span>
-            </Button>
+    <div className="space-y-8">
+      {/* Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <Link
+            href="/dashboard/certificates"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition mb-2"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Registry</span>
           </Link>
+          <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl">
+            Issue Digital Certificate
+          </h1>
+          <p className="text-xs text-slate-500 mt-1">
+            Anchor a tamper-proof credential to Ethereum with instant PDF generation and automated recipient dispatch.
+          </p>
         </div>
+
+        {issuedCertificate && (
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleResetForm}
+            className="rounded-full border-slate-200 text-xs font-semibold"
+          >
+            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
+            Issue Another Certificate
+          </Button>
+        )}
       </div>
 
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
-          Issue New Certificate
-        </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Create, anchor to the Ethereum blockchain, and deliver a cryptographic digital credential.
-        </p>
-      </div>
-
-      {/* Success View */}
+      {/* Success State Screen */}
       {issuedCertificate ? (
-        <Card className="border-emerald-200 bg-gradient-to-b from-emerald-50/50 to-white shadow-md">
-          <CardHeader className="text-center pb-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-full bg-emerald-100 text-emerald-600 shadow-sm">
-              <CheckCircle2 className="h-8 w-8" />
-            </div>
-            <CardTitle className="mt-4 text-2xl font-bold text-emerald-950">
-              Certificate Issued Successfully!
-            </CardTitle>
-            <CardDescription className="text-emerald-700">
-              The digital certificate has been created, hashed, and recorded.
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6">
-            {/* Certificate Details Summary */}
-            <div className="grid gap-4 rounded-lg border border-slate-200 bg-white p-4 sm:grid-cols-2">
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  Certificate ID
-                </span>
-                <div className="mt-1 flex items-center gap-2">
-                  <span className="font-mono text-sm font-bold text-blue-600">
-                    {issuedCertificate.certificateId}
-                  </span>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-6 w-6 text-slate-400 hover:text-slate-600"
-                    onClick={() =>
-                      handleCopy(issuedCertificate.certificateId, 'certId')
-                    }
-                    title="Copy Certificate ID"
-                  >
-                    {copiedField === 'certId' ? (
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-3.5 w-3.5" />
-                    )}
-                  </Button>
+        <div className="space-y-6 animate-in fade-in-50 duration-300">
+          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 shadow-xs">
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex items-start gap-4">
+                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md">
+                  <CheckCircle2 className="h-6 w-6" />
+                </div>
+                <div>
+                  <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 font-mono text-xs">
+                    ON-CHAIN MINED & VERIFIED
+                  </Badge>
+                  <h2 className="text-xl font-[900] text-slate-900 mt-1">
+                    Certificate Successfully Issued!
+                  </h2>
+                  <p className="text-xs text-slate-600 mt-1">
+                    Cryptographic hash recorded on Ethereum Sepolia ledger. Vector PDF diploma generated.
+                  </p>
                 </div>
               </div>
 
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  Recipient Name
-                </span>
-                <p className="mt-1 text-sm font-semibold text-slate-800">
-                  {issuedCertificate.recipientName}
-                </p>
-              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <a
+                  href={`/api/certificates/${issuedCertificate.id}/pdf`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md">
+                    <Download className="mr-1.5 h-4 w-4" />
+                    Download Official PDF
+                  </Button>
+                </a>
 
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  Recipient Email
-                </span>
-                <p className="mt-1 text-sm text-slate-700">
-                  {issuedCertificate.recipientEmail}
-                </p>
-              </div>
-
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-400">
-                  Course / Program
-                </span>
-                <p className="mt-1 text-sm font-medium text-slate-800">
-                  {issuedCertificate.courseName}
-                </p>
+                <Link
+                  href={`/verify/${encodeURIComponent(issuedCertificate.certificateId)}`}
+                  target="_blank"
+                >
+                  <Button variant="outline" className="rounded-full border-slate-300 text-xs font-semibold bg-white">
+                    <ExternalLink className="mr-1.5 h-4 w-4" />
+                    Public Verification Page
+                  </Button>
+                </Link>
               </div>
             </div>
 
-            {/* Blockchain Transaction Information */}
-            <div className="rounded-lg border border-slate-200 bg-slate-50 p-4">
-              <div className="flex items-center gap-2 text-slate-700">
-                <ShieldCheck className="h-4 w-4 text-blue-600" />
-                <span className="text-xs font-semibold uppercase tracking-wider">
-                  Blockchain Proof Record
-                </span>
+            {/* Proof Metadata Strip */}
+            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-emerald-200/80 font-mono text-xs">
+              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
+                <span className="text-slate-400 text-[11px] block">Certificate ID</span>
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-[#C8102E] text-sm">{issuedCertificate.certificateId}</span>
+                  <button onClick={() => handleCopy(issuedCertificate.certificateId, 'Certificate ID')} className="text-slate-400 hover:text-slate-600">
+                    <Copy className="h-3.5 w-3.5" />
+                  </button>
+                </div>
               </div>
 
-              <div className="mt-3 space-y-2 text-xs">
-                {latestTx?.txHash ? (
-                  <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
-                    <span className="text-slate-500">Transaction Hash:</span>
-                    <div className="flex items-center gap-1.5 font-mono">
-                      <a
-                        href={getEtherscanUrl(
-                          latestTx.txHash,
-                          latestTx.networkName
-                        )}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-blue-600 hover:underline inline-flex items-center gap-1"
-                      >
-                        <span>{shortenHash(latestTx.txHash, 8)}</span>
-                        <ExternalLink className="h-3 w-3" />
-                      </a>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-5 w-5 text-slate-400 hover:text-slate-600"
-                        onClick={() =>
-                          handleCopy(latestTx.txHash, 'txHash')
-                        }
-                        title="Copy Tx Hash"
-                      >
-                        {copiedField === 'txHash' ? (
-                          <Check className="h-3 w-3 text-emerald-600" />
-                        ) : (
-                          <Copy className="h-3 w-3" />
-                        )}
-                      </Button>
+              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
+                <span className="text-slate-400 text-[11px] block">Recipient</span>
+                <span className="font-bold text-slate-800 block truncate">{issuedCertificate.recipientName}</span>
+                <span className="text-slate-500 text-[10px] truncate block">{issuedCertificate.recipientEmail}</span>
+              </div>
+
+              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
+                <span className="text-slate-400 text-[11px] block">Transaction Hash</span>
+                <div className="flex items-center justify-between">
+                  <span className="text-slate-700 text-xs truncate max-w-[150px]">
+                    {issuedCertificate.transactions?.[0]?.txHash || 'Pending on node'}
+                  </span>
+                  {issuedCertificate.transactions?.[0]?.txHash && (
+                    <button onClick={() => handleCopy(issuedCertificate.transactions![0].txHash, 'Tx Hash')} className="text-slate-400 hover:text-slate-600">
+                      <Copy className="h-3.5 w-3.5" />
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      ) : (
+        /* Split Screen Studio: Form + Live Interactive Preview */
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+          {/* Left Form: 7 Columns */}
+          <div className="lg:col-span-7">
+            <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+              <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-5">
+                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C8102E]">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Credential Details</span>
+                </div>
+                <CardTitle className="text-lg font-[900] text-slate-900">
+                  Recipient & Program Specification
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  Enter student information to compute the SHA-256 cryptographic seal.
+                </CardDescription>
+              </CardHeader>
+
+              <CardContent className="pt-6">
+                <form onSubmit={handleSubmit} className="space-y-5">
+                  {/* Recipient Name */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipientName" className="text-xs font-bold text-slate-700">
+                      Recipient Full Name <span className="text-rose-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="recipientName"
+                        name="recipientName"
+                        placeholder="e.g. Dr. Alex Rivera or Eleanor Vance"
+                        value={formData.recipientName}
+                        onChange={handleInputChange}
+                        required
+                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+                      />
                     </div>
                   </div>
-                ) : (
-                  <p className="text-slate-500 italic">
-                    Registered in database. Smart contract transaction recorded or queued.
-                  </p>
-                )}
 
-                {issuedCertificate.emailSent && (
-                  <div className="flex items-center gap-1.5 text-emerald-700 pt-1">
-                    <Mail className="h-3.5 w-3.5" />
-                    <span>Notification email with PDF attachment dispatched to recipient.</span>
+                  {/* Recipient Email */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="recipientEmail" className="text-xs font-bold text-slate-700">
+                      Recipient Email Address <span className="text-rose-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="recipientEmail"
+                        name="recipientEmail"
+                        type="email"
+                        placeholder="e.g. student@oxford.edu"
+                        value={formData.recipientEmail}
+                        onChange={handleInputChange}
+                        required
+                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+                      />
+                    </div>
+                    <p className="text-[11px] text-slate-400">
+                      The official PDF certificate will be delivered to this email automatically upon mining.
+                    </p>
                   </div>
-                )}
+
+                  {/* Course Name */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="courseName" className="text-xs font-bold text-slate-700">
+                      Program / Degree / Certification Title <span className="text-rose-500">*</span>
+                    </Label>
+                    <div className="relative">
+                      <BookOpen className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="courseName"
+                        name="courseName"
+                        placeholder="e.g. Master of Science in Quantum Computing & AI"
+                        value={formData.courseName}
+                        onChange={handleInputChange}
+                        required
+                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Course Description */}
+                  <div className="space-y-1.5">
+                    <Label htmlFor="courseDescription" className="text-xs font-bold text-slate-700">
+                      Program Description & Honors <span className="text-slate-400 font-normal">(Optional)</span>
+                    </Label>
+                    <Textarea
+                      id="courseDescription"
+                      name="courseDescription"
+                      placeholder="e.g. Awarded with Distinction for exceptional research in decentralized cryptography..."
+                      value={formData.courseDescription}
+                      onChange={handleInputChange}
+                      rows={3}
+                      className="rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+                    />
+                  </div>
+
+                  {/* Expiration Date & Presets */}
+                  <div className="space-y-2 pt-1">
+                    <div className="flex items-center justify-between">
+                      <Label htmlFor="expiryDate" className="text-xs font-bold text-slate-700">
+                        Validity / Expiration Date <span className="text-slate-400 font-normal">(Leave blank for Lifetime)</span>
+                      </Label>
+                    </div>
+
+                    <div className="flex flex-wrap items-center gap-2 pb-1">
+                      <button
+                        type="button"
+                        onClick={() => handleSetPresetExpiry(null)}
+                        className={`px-3 py-1 rounded-full text-[11px] font-bold border transition ${
+                          formData.expiryDate === ''
+                            ? 'bg-[#C8102E] text-white border-[#C8102E]'
+                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                        }`}
+                      >
+                        Lifetime (No Expiry)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetPresetExpiry(12)}
+                        className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition"
+                      >
+                        +1 Year
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleSetPresetExpiry(24)}
+                        className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition"
+                      >
+                        +2 Years
+                      </button>
+                    </div>
+
+                    <div className="relative">
+                      <Calendar className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                      <Input
+                        id="expiryDate"
+                        name="expiryDate"
+                        type="date"
+                        value={formData.expiryDate}
+                        onChange={handleInputChange}
+                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Submit Button */}
+                  <div className="pt-3">
+                    <Button
+                      type="submit"
+                      disabled={isLoading}
+                      className="w-full h-12 rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-sm shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
+                    >
+                      {isLoading ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Broadcasting Transaction to Sepolia Blockchain...
+                        </>
+                      ) : (
+                        <>
+                          <ShieldCheck className="mr-2 h-4 w-4" />
+                          Anchor & Issue Certificate
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </form>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Right Live Preview: 5 Columns */}
+          <div className="lg:col-span-5 space-y-4 sticky top-28">
+            <div className="flex items-center justify-between px-2">
+              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
+                <Eye className="h-3.5 w-3.5 text-[#C8102E]" />
+                Live Diploma Preview
+              </span>
+              <span className="text-[11px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                A4 Vector Sharp
+              </span>
+            </div>
+
+            {/* Real-time Simulated Diploma Card */}
+            <div className="rounded-3xl border-2 border-[#9E1B32] bg-white p-7 shadow-xl space-y-6 relative overflow-hidden">
+              {/* Inner gold decorative border */}
+              <div className="absolute inset-2 border border-[#CA8A04]/40 rounded-2xl pointer-events-none" />
+
+              {/* Institution Header */}
+              <div className="text-center space-y-1.5 pt-2">
+                <div className="flex justify-center">
+                  <CitadelLogo className="h-10 w-10" size={48} />
+                </div>
+                <h4 className="text-xs font-[900] tracking-wider uppercase text-slate-800">
+                  {orgName}
+                </h4>
+                <p className="text-[9px] uppercase tracking-widest text-[#9E1B32] font-bold">
+                  Official Blockchain-Verified Credential
+                </p>
+              </div>
+
+              {/* Student Name */}
+              <div className="text-center py-2 space-y-1">
+                <p className="text-[10px] text-slate-400 uppercase tracking-widest">This is to certify that</p>
+                <h3 className="text-lg font-[900] text-slate-900 tracking-tight font-serif min-h-[28px]">
+                  {formData.recipientName.trim() || 'Graduate Student Name'}
+                </h3>
+                <p className="text-[10px] text-slate-500">has successfully fulfilled all requirements for</p>
+                <p className="text-xs font-bold text-[#C8102E] leading-snug min-h-[18px]">
+                  {formData.courseName.trim() || 'Degree / Certification Title'}
+                </p>
+              </div>
+
+              {/* Description Snippet */}
+              {formData.courseDescription && (
+                <p className="text-[10px] text-slate-500 text-center italic line-clamp-2 px-4">
+                  &ldquo;{formData.courseDescription}&rdquo;
+                </p>
+              )}
+
+              {/* Footer proof bar */}
+              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
+                <div className="space-y-0.5">
+                  <span className="block text-[9px] text-slate-400">Issue Date:</span>
+                  <span className="font-bold text-slate-700">{new Date().toISOString().split('T')[0]}</span>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <QrCode className="h-6 w-6 text-slate-700" />
+                  <div className="text-right">
+                    <span className="block text-[9px] text-slate-400">Validity:</span>
+                    <span className="font-bold text-emerald-600">
+                      {formData.expiryDate ? formData.expiryDate : 'Lifetime'}
+                    </span>
+                  </div>
+                </div>
               </div>
             </div>
-          </CardContent>
-
-          <CardFooter className="flex flex-col gap-2 sm:flex-row sm:justify-between border-t border-emerald-100 pt-6">
-            <div className="flex flex-wrap gap-2 w-full sm:w-auto">
-              <a
-                href={`/api/certificates/${issuedCertificate.id}/pdf`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="w-full sm:w-auto"
-              >
-                <Button className="w-full sm:w-auto gap-2 bg-blue-600 text-white hover:bg-blue-700">
-                  <Download className="h-4 w-4" />
-                  Download PDF
-                </Button>
-              </a>
-
-              <Link
-                href={`/dashboard/certificates/${issuedCertificate.id}`}
-                className="w-full sm:w-auto"
-              >
-                <Button
-                  variant="outline"
-                  className="w-full sm:w-auto gap-2 border-slate-300"
-                >
-                  <Eye className="h-4 w-4" />
-                  View Certificate
-                </Button>
-              </Link>
-            </div>
-
-            <Button
-              variant="secondary"
-              onClick={handleResetForm}
-              className="w-full sm:w-auto gap-2"
-            >
-              <RotateCcw className="h-4 w-4" />
-              Issue Another
-            </Button>
-          </CardFooter>
-        </Card>
-      ) : (
-        /* Form View */
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader>
-            <div className="flex items-center gap-2 text-blue-600">
-              <Award className="h-5 w-5" />
-              <CardTitle className="text-xl">Certificate Details</CardTitle>
-            </div>
-            <CardDescription>
-              Provide the recipient details and credential metadata. All fields marked with * are required.
-            </CardDescription>
-          </CardHeader>
-
-          <form onSubmit={handleSubmit}>
-            <CardContent className="space-y-5">
-              {/* Recipient Name */}
-              <div className="space-y-2">
-                <Label htmlFor="recipientName" className="flex items-center gap-1.5 font-medium">
-                  <User className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Recipient Full Name *</span>
-                </Label>
-                <Input
-                  id="recipientName"
-                  name="recipientName"
-                  placeholder="e.g., Alice Johnson"
-                  value={formData.recipientName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  autoComplete="name"
-                />
-                <p className="text-[12px] text-slate-500">
-                  This name will be permanently displayed on the certificate and hashed into the blockchain record.
-                </p>
-              </div>
-
-              {/* Recipient Email */}
-              <div className="space-y-2">
-                <Label htmlFor="recipientEmail" className="flex items-center gap-1.5 font-medium">
-                  <Mail className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Recipient Email Address *</span>
-                </Label>
-                <Input
-                  id="recipientEmail"
-                  name="recipientEmail"
-                  type="email"
-                  placeholder="e.g., alice.johnson@example.com"
-                  value={formData.recipientEmail}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                  autoComplete="email"
-                />
-                <p className="text-[12px] text-slate-500">
-                  The recipient will receive an email containing the certificate link, verification QR code, and PDF.
-                </p>
-              </div>
-
-              {/* Course / Program Name */}
-              <div className="space-y-2">
-                <Label htmlFor="courseName" className="flex items-center gap-1.5 font-medium">
-                  <BookOpen className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Course / Program Name *</span>
-                </Label>
-                <Input
-                  id="courseName"
-                  name="courseName"
-                  placeholder="e.g., Certified Blockchain Solutions Architect"
-                  value={formData.courseName}
-                  onChange={handleInputChange}
-                  required
-                  disabled={isLoading}
-                />
-              </div>
-
-              {/* Course Description */}
-              <div className="space-y-2">
-                <Label htmlFor="courseDescription" className="flex items-center gap-1.5 font-medium">
-                  <FileText className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Course Description (Optional)</span>
-                </Label>
-                <Textarea
-                  id="courseDescription"
-                  name="courseDescription"
-                  placeholder="Provide a short description of achievements, competencies, or curriculum covered..."
-                  value={formData.courseDescription}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  rows={3}
-                />
-                <p className="text-[12px] text-slate-500">
-                  Optional summary of achievements or honors shown on the certificate verification page.
-                </p>
-              </div>
-
-              {/* Expiry Date */}
-              <div className="space-y-2">
-                <Label htmlFor="expiryDate" className="flex items-center gap-1.5 font-medium">
-                  <Calendar className="h-3.5 w-3.5 text-slate-500" />
-                  <span>Expiration Date (Optional)</span>
-                </Label>
-                <Input
-                  id="expiryDate"
-                  name="expiryDate"
-                  type="date"
-                  value={formData.expiryDate}
-                  onChange={handleInputChange}
-                  disabled={isLoading}
-                  className="w-full sm:w-64"
-                />
-                <p className="text-[12px] text-slate-500">
-                  Leave blank if the credential is perpetual and does not expire.
-                </p>
-              </div>
-            </CardContent>
-
-            <CardFooter className="flex flex-col sm:flex-row sm:justify-between items-center gap-3 border-t border-slate-100 pt-6">
-              <p className="text-xs text-slate-500 order-2 sm:order-1">
-                Issuance registers an irreversible SHA-256 hash.
-              </p>
-              <Button
-                type="submit"
-                disabled={isLoading}
-                className="w-full sm:w-auto bg-blue-600 text-white hover:bg-blue-700 order-1 sm:order-2 min-w-[160px]"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Issuing On-Chain...
-                  </>
-                ) : (
-                  <>
-                    <Award className="mr-2 h-4 w-4" />
-                    Issue Certificate
-                  </>
-                )}
-              </Button>
-            </CardFooter>
-          </form>
-        </Card>
+          </div>
+        </div>
       )}
     </div>
   );

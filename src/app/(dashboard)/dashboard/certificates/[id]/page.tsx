@@ -26,6 +26,7 @@ import {
   Ban,
   Building2,
   FileText,
+  QrCode,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -55,6 +56,7 @@ import {
   getEtherscanUrl,
   cn,
 } from '@/lib/utils';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 interface BlockchainTransactionItem {
   id: string;
@@ -99,13 +101,16 @@ export default function CertificateDetailPage() {
 
   const certificateDbId = (params?.id as string) || '';
 
-  // Data & State
+  // State
   const [certificate, setCertificate] = useState<CertificateDetail | null>(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSendingEmail, setIsSendingEmail] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
 
-  // Revoke Dialog State
+  // Email resend state
+  const [isResendingEmail, setIsResendingEmail] = useState(false);
+
+  // Revoke Dialog state
   const [isRevokeDialogOpen, setIsRevokeDialogOpen] = useState(false);
   const [revokeReason, setRevokeReason] = useState('');
   const [isRevoking, setIsRevoking] = useState(false);
@@ -114,654 +119,434 @@ export default function CertificateDetailPage() {
   const fetchCertificate = useCallback(async () => {
     if (!certificateDbId) return;
     setIsLoading(true);
+    setErrorMessage(null);
+
     try {
       const res = await fetch(`/api/certificates/${certificateDbId}`);
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to retrieve certificate');
+      if (data.success && data.certificate) {
+        setCertificate(data.certificate);
+      } else {
+        setErrorMessage(data.message || 'Certificate record not found.');
       }
-
-      setCertificate(data.certificate);
-    } catch (error: any) {
-      console.error('Error fetching certificate details:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description:
-          error?.message || 'Unable to load certificate information.',
-      });
+    } catch (err: any) {
+      setErrorMessage(err?.message || 'Error fetching certificate details.');
     } finally {
       setIsLoading(false);
     }
-  }, [certificateDbId, toast]);
+  }, [certificateDbId]);
 
   useEffect(() => {
     fetchCertificate();
   }, [fetchCertificate]);
 
-  // Copy helper
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
+    toast({
+      title: 'Copied to Clipboard',
+      description: `${key} copied.`,
+    });
     setTimeout(() => setCopiedKey(null), 2000);
   };
 
-  // Resend email
   const handleResendEmail = async () => {
     if (!certificate) return;
-    setIsSendingEmail(true);
+    setIsResendingEmail(true);
+
     try {
       const res = await fetch(
         `/api/certificates/${certificate.id}/resend-email`,
-        {
-          method: 'POST',
-        }
+        { method: 'POST' }
       );
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to resend email');
+      if (data.success) {
+        toast({
+          title: 'Email Sent Successfully',
+          description: `PDF diploma dispatched to ${certificate.recipientEmail}.`,
+        });
+        setCertificate((prev) => (prev ? { ...prev, emailSent: true } : null));
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Email Failed',
+          description: data.message || 'Unable to send email.',
+        });
       }
-
-      toast({
-        title: 'Email Sent Successfully',
-        description: `Notification email dispatched to ${certificate.recipientEmail}.`,
-      });
-    } catch (error: any) {
-      console.error('Resend email error:', error);
+    } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Email Delivery Failed',
-        description: error?.message || 'Could not deliver the certificate email.',
+        title: 'Error',
+        description: err?.message || 'Error dispatching email.',
       });
     } finally {
-      setIsSendingEmail(false);
+      setIsResendingEmail(false);
     }
   };
 
-  // Confirm Revocation
-  const handleConfirmRevoke = async () => {
+  const handleRevokeSubmit = async () => {
     if (!certificate) return;
 
     if (!revokeReason.trim() || revokeReason.trim().length < 5) {
       toast({
         variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Revocation reason must be at least 5 characters.',
+        title: 'Reason Required',
+        description: 'Please provide an official audit reason (at least 5 characters).',
       });
       return;
     }
 
     setIsRevoking(true);
+
     try {
       const res = await fetch(`/api/certificates/${certificate.id}/revoke`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ reason: revokeReason.trim() }),
       });
-
       const data = await res.json();
 
-      if (!res.ok || !data.success) {
-        throw new Error(data.message || 'Failed to revoke certificate');
+      if (data.success) {
+        toast({
+          title: 'Certificate Revoked on Blockchain',
+          description: `Status updated on Ethereum Sepolia ledger.`,
+        });
+        setIsRevokeDialogOpen(false);
+        fetchCertificate();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Revocation Failed',
+          description: data.message || 'Unable to revoke on-chain.',
+        });
       }
-
-      toast({
-        title: 'Certificate Revoked',
-        description: 'The certificate has been permanently revoked.',
-      });
-
-      setIsRevokeDialogOpen(false);
-      setRevokeReason('');
-      fetchCertificate();
-    } catch (error: any) {
-      console.error('Revoke error:', error);
+    } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Revocation Failed',
-        description:
-          error?.message || 'An error occurred while revoking the certificate.',
+        title: 'Network Error',
+        description: err?.message || 'Failed to revoke certificate.',
       });
     } finally {
       setIsRevoking(false);
     }
   };
 
+  const getBadgeVariant = (status: string) => {
+    switch (status) {
+      case 'VALID':
+        return 'valid';
+      case 'EXPIRED':
+        return 'expired';
+      case 'REVOKED':
+        return 'revoked';
+      default:
+        return 'secondary';
+    }
+  };
+
   if (isLoading) {
     return (
-      <div className="flex min-h-[400px] flex-col items-center justify-center space-y-3">
-        <Loader2 className="h-10 w-10 animate-spin text-blue-600" />
-        <p className="text-sm font-medium text-slate-500">
-          Loading certificate details...
+      <div className="flex flex-col items-center justify-center py-24 text-slate-400">
+        <Loader2 className="h-10 w-10 animate-spin text-[#C8102E]" />
+        <p className="mt-4 text-xs font-bold uppercase tracking-wider text-slate-500">
+          Loading certificate verification data...
         </p>
       </div>
     );
   }
 
-  if (!certificate) {
+  if (errorMessage || !certificate) {
     return (
-      <div className="mx-auto max-w-lg text-center py-16 space-y-4">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-rose-100 text-rose-600">
-          <XCircle className="h-6 w-6" />
+      <div className="rounded-3xl border border-red-200 bg-red-50 p-8 text-center">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-2xl bg-red-100 text-red-600">
+          <ShieldAlert className="h-6 w-6" />
         </div>
-        <h2 className="text-xl font-bold text-slate-900">
-          Certificate Not Found
-        </h2>
-        <p className="text-sm text-slate-500">
-          The requested certificate does not exist or you do not have permission to view it.
-        </p>
+        <h3 className="mt-4 text-lg font-[900] text-red-900">Certificate Not Found</h3>
+        <p className="mt-1 text-xs text-red-600">{errorMessage || 'Unable to find certificate record.'}</p>
         <Link href="/dashboard/certificates">
-          <Button variant="outline" className="mt-2 gap-2">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Certificates List
+          <Button variant="outline" className="mt-5 rounded-full bg-white text-xs font-semibold">
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Registry
           </Button>
         </Link>
       </div>
     );
   }
 
-  const issueTx =
-    certificate.transactions.find((t) => t.action === 'ISSUE') ||
-    certificate.transactions[0];
-  const revokeTx = certificate.transactions.find((t) => t.action === 'REVOKE');
-
-  const statusVariant =
-    certificate.status === 'VALID'
-      ? 'valid'
-      : certificate.status === 'EXPIRED'
-      ? 'expired'
-      : 'revoked';
-
   return (
-    <div className="space-y-6">
-      {/* Top Breadcrumb & Actions Bar */}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard/certificates">
-            <Button
-              variant="ghost"
-              size="sm"
-              className="gap-1 text-slate-600 hover:text-slate-900"
-            >
-              <ArrowLeft className="h-4 w-4" />
-              <span>All Certificates</span>
-            </Button>
+    <div className="space-y-8">
+      {/* Top Header */}
+      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
+        <div>
+          <Link
+            href="/dashboard/certificates"
+            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition mb-2"
+          >
+            <ArrowLeft className="h-3.5 w-3.5" />
+            <span>Back to Registry</span>
           </Link>
+          <div className="flex items-center gap-3">
+            <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl font-mono">
+              {certificate.certificateId}
+            </h1>
+            <Badge variant={getBadgeVariant(certificate.status) as any}>
+              {certificate.status}
+            </Badge>
+          </div>
         </div>
 
-        {/* Global Actions */}
-        <div className="flex flex-wrap items-center gap-2">
-          {/* Public Verification Link */}
-          <Link
-            href={`/verify/${certificate.certificateId}`}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs text-blue-600 hover:text-blue-700 hover:bg-blue-50 border-blue-200"
-            >
-              <span>Public Verification Page</span>
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Button>
-          </Link>
-
-          {/* Download PDF */}
+        <div className="flex flex-wrap items-center gap-3">
           <a
             href={`/api/certificates/${certificate.id}/pdf`}
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Button size="sm" className="gap-1.5 bg-blue-600 text-white hover:bg-blue-700">
-              <Download className="h-3.5 w-3.5" />
-              <span>Download PDF</span>
+            <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md">
+              <Download className="mr-1.5 h-4 w-4" />
+              Download PDF Diploma
             </Button>
           </a>
 
-          {/* Resend Email */}
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResendEmail}
-            disabled={isSendingEmail}
-            className="gap-1.5 text-xs"
+          <Link
+            href={`/verify/${encodeURIComponent(certificate.certificateId)}`}
+            target="_blank"
           >
-            {isSendingEmail ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Send className="h-3.5 w-3.5" />
-            )}
-            <span>Resend Email</span>
-          </Button>
+            <Button variant="outline" className="rounded-full border-slate-200 text-xs font-semibold">
+              <ExternalLink className="mr-1.5 h-4 w-4" />
+              Public Verification
+            </Button>
+          </Link>
 
-          {/* Revoke Button if Valid */}
           {certificate.status === 'VALID' && (
             <Button
-              variant="destructive"
-              size="sm"
+              variant="outline"
               onClick={() => setIsRevokeDialogOpen(true)}
-              className="gap-1.5 text-xs"
+              className="rounded-full border-rose-200 text-xs font-bold text-rose-600 hover:bg-rose-50"
             >
-              <Ban className="h-3.5 w-3.5" />
-              <span>Revoke</span>
+              <Ban className="mr-1.5 h-4 w-4" />
+              Revoke
             </Button>
           )}
         </div>
       </div>
 
-      {/* Main Grid: Certificate Info + Blockchain Info */}
-      <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-        {/* Certificate Info Card (2 cols) */}
-        <div className="space-y-6 lg:col-span-2">
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <CardHeader className="flex flex-row items-start justify-between border-b border-slate-100 pb-4">
-              <div className="space-y-1">
-                <div className="flex items-center gap-2">
-                  <FileBadge2 className="h-5 w-5 text-blue-600" />
-                  <CardTitle className="text-xl">Certificate Details</CardTitle>
-                </div>
-                <CardDescription>
-                  Credential record and recipient metadata
-                </CardDescription>
-              </div>
-
-              <Badge variant={statusVariant} className="px-3 py-1 text-xs uppercase font-bold tracking-wider">
-                {certificate.status}
-              </Badge>
+      {/* Main Grid Details */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+        {/* Left Column: 7 Columns */}
+        <div className="lg:col-span-7 space-y-6">
+          {/* Certificate Metadata Card */}
+          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
+              <CardTitle className="text-base font-[900] text-slate-900">
+                Academic Credential Information
+              </CardTitle>
             </CardHeader>
-
-            <CardContent className="space-y-6 pt-6">
-              {/* Certificate ID Banner */}
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 rounded-lg border border-blue-100 bg-blue-50/50 p-4">
+            <CardContent className="pt-5 space-y-4 text-xs">
+              <div className="grid grid-cols-2 gap-4 pb-3 border-b border-slate-100">
                 <div>
-                  <span className="text-xs font-medium uppercase tracking-wider text-blue-800">
-                    Unique Certificate ID
-                  </span>
-                  <p className="mt-0.5 font-mono text-base font-bold text-blue-900">
-                    {certificate.certificateId}
-                  </p>
+                  <span className="text-slate-400 block font-medium">Recipient Name:</span>
+                  <span className="font-bold text-sm text-slate-900">{certificate.recipientName}</span>
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() =>
-                    handleCopy(certificate.certificateId, 'certId')
-                  }
-                  className="gap-1.5 text-xs bg-white border-blue-200 text-blue-700 hover:bg-blue-50"
-                >
-                  {copiedKey === 'certId' ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span>Copied!</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy ID</span>
-                    </>
-                  )}
-                </Button>
-              </div>
-
-              {/* Recipient Information */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Recipient Information
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <User className="h-4 w-4 text-slate-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Recipient Name</p>
-                      <p className="text-sm font-semibold text-slate-900">
-                        {certificate.recipientName}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Mail className="h-4 w-4 text-slate-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Recipient Email</p>
-                      <p className="text-sm font-medium text-slate-800">
-                        {certificate.recipientEmail}
-                      </p>
-                    </div>
-                  </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Recipient Email:</span>
+                  <span className="font-bold text-slate-800 font-mono">{certificate.recipientEmail}</span>
                 </div>
               </div>
 
-              {/* Course Information */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Course & Credential Details
-                </h3>
-                <div className="rounded-lg border border-slate-100 bg-slate-50/50 p-4 space-y-3">
-                  <div>
-                    <p className="text-xs text-slate-500">Course / Program</p>
-                    <p className="text-sm font-semibold text-slate-900">
-                      {certificate.courseName}
-                    </p>
-                  </div>
-                  {certificate.courseDescription && (
-                    <div>
-                      <p className="text-xs text-slate-500">Description / Achievements</p>
-                      <p className="mt-1 text-xs text-slate-700 leading-relaxed">
-                        {certificate.courseDescription}
-                      </p>
-                    </div>
-                  )}
-                </div>
+              <div className="space-y-1 pb-3 border-b border-slate-100">
+                <span className="text-slate-400 block font-medium">Program / Degree Title:</span>
+                <span className="font-bold text-sm text-[#C8102E]">{certificate.courseName}</span>
               </div>
 
-              {/* Dates */}
-              <div className="space-y-3">
-                <h3 className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-                  Validity Dates
-                </h3>
-                <div className="grid gap-4 sm:grid-cols-2 rounded-lg border border-slate-100 bg-slate-50/50 p-4">
-                  <div className="flex items-start gap-3">
-                    <Calendar className="h-4 w-4 text-slate-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Issue Date</p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {formatDate(certificate.issueDate)}
-                      </p>
-                    </div>
-                  </div>
-
-                  <div className="flex items-start gap-3">
-                    <Clock className="h-4 w-4 text-slate-400 mt-0.5" />
-                    <div>
-                      <p className="text-xs text-slate-500">Expiration Date</p>
-                      <p className="text-sm font-medium text-slate-900">
-                        {certificate.expiryDate
-                          ? formatDate(certificate.expiryDate)
-                          : 'Does not expire'}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              {/* Revocation Section (if revoked) */}
-              {certificate.status === 'REVOKED' && (
-                <div className="rounded-lg border border-rose-200 bg-rose-50/60 p-4 space-y-2">
-                  <div className="flex items-center gap-2 text-rose-700 font-semibold text-sm">
-                    <ShieldAlert className="h-4 w-4" />
-                    <span>Revocation Audit Trail</span>
-                  </div>
-                  <div className="text-xs text-slate-700 space-y-1">
-                    <p>
-                      <span className="font-medium text-slate-800">Reason:</span>{' '}
-                      {certificate.revokeReason || 'No reason provided'}
-                    </p>
-                    {certificate.revokedAt && (
-                      <p>
-                        <span className="font-medium text-slate-800">Date Revoked:</span>{' '}
-                        {formatDate(certificate.revokedAt)}
-                      </p>
-                    )}
-                  </div>
+              {certificate.courseDescription && (
+                <div className="space-y-1 pb-3 border-b border-slate-100">
+                  <span className="text-slate-400 block font-medium">Description & Honors:</span>
+                  <p className="text-slate-600 italic">{certificate.courseDescription}</p>
                 </div>
               )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <span className="text-slate-400 block font-medium">Issue Date:</span>
+                  <span className="font-bold text-slate-800">{formatDate(certificate.issueDate)}</span>
+                </div>
+                <div>
+                  <span className="text-slate-400 block font-medium">Expiration:</span>
+                  <span className="font-bold text-emerald-600">
+                    {certificate.expiryDate ? formatDate(certificate.expiryDate) : 'Lifetime Validity'}
+                  </span>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Recipient Delivery & Notifications */}
+          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+              <CardTitle className="text-base font-[900] text-slate-900">
+                Recipient Delivery & Notifications
+              </CardTitle>
+              <Badge variant="outline" className={certificate.emailSent ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-amber-50 text-amber-700 border-amber-200'}>
+                {certificate.emailSent ? 'Email Dispatched' : 'Email Pending'}
+              </Badge>
+            </CardHeader>
+            <CardContent className="pt-5 flex items-center justify-between">
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-800">Automated PDF Diploma Delivery</p>
+                <p className="text-xs text-slate-500">Recipient is sent the vector PDF with verification links</p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleResendEmail}
+                disabled={isResendingEmail}
+                className="rounded-xl text-xs font-semibold border-slate-200"
+              >
+                {isResendingEmail ? (
+                  <>
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  <>
+                    <Send className="mr-1.5 h-3.5 w-3.5" />
+                    Resend Email
+                  </>
+                )}
+              </Button>
             </CardContent>
           </Card>
         </div>
 
-        {/* Blockchain Proof Card (1 col) */}
-        <div className="space-y-6">
-          <Card className="border-slate-200 bg-white shadow-sm">
-            <CardHeader className="border-b border-slate-100 pb-4">
-              <div className="flex items-center gap-2 text-blue-600">
-                <Shield className="h-5 w-5" />
-                <CardTitle className="text-lg">Blockchain Proof</CardTitle>
+        {/* Right Column: 5 Columns (Blockchain Proofs & QR) */}
+        <div className="lg:col-span-5 space-y-6">
+          {/* Blockchain Proof Card */}
+          <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+            <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-base font-[900] text-slate-900">
+                  Ethereum Ledger Proof
+                </CardTitle>
+                <span className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[10px] font-extrabold">
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                  Mined on EVM
+                </span>
               </div>
-              <CardDescription>
-                On-chain cryptographic verification
-              </CardDescription>
             </CardHeader>
-
-            <CardContent className="space-y-4 pt-4 text-xs">
-              {/* Network */}
-              <div>
-                <span className="text-slate-500 font-medium">Network</span>
-                <div className="mt-1 flex items-center gap-1.5">
-                  <Badge variant="secondary" className="font-mono text-[11px] uppercase">
-                    {issueTx?.networkName || 'Sepolia Testnet'}
-                  </Badge>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Block Number */}
-              <div>
-                <span className="text-slate-500 font-medium">Block Number</span>
-                <p className="mt-1 font-mono font-semibold text-slate-800">
-                  {issueTx?.blockNumber ? `#${issueTx.blockNumber}` : 'Pending / Off-Chain'}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Transaction Hash */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Transaction Hash</span>
-                  {issueTx?.txHash && (
-                    <button
-                      type="button"
-                      onClick={() => handleCopy(issueTx.txHash, 'txHash')}
-                      className="text-slate-400 hover:text-slate-600"
-                      title="Copy Hash"
-                    >
-                      {copiedKey === 'txHash' ? (
-                        <Check className="h-3 w-3 text-emerald-600" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                    </button>
-                  )}
-                </div>
-                {issueTx?.txHash ? (
-                  <div className="mt-1">
-                    <a
-                      href={getEtherscanUrl(
-                        issueTx.txHash,
-                        issueTx.networkName
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 font-mono text-blue-600 hover:underline break-all"
-                    >
-                      <span>{shortenHash(issueTx.txHash, 10)}</span>
-                      <ExternalLink className="h-3 w-3 shrink-0" />
-                    </a>
-                  </div>
-                ) : (
-                  <p className="mt-1 text-slate-400 italic">Off-chain record</p>
-                )}
-              </div>
-
-              <Separator />
-
-              {/* Contract Address */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Contract Address</span>
-                  {issueTx?.contractAddress && (
-                    <button
-                      type="button"
-                      onClick={() =>
-                        handleCopy(issueTx.contractAddress, 'contractAddress')
-                      }
-                      className="text-slate-400 hover:text-slate-600"
-                      title="Copy Address"
-                    >
-                      {copiedKey === 'contractAddress' ? (
-                        <Check className="h-3 w-3 text-emerald-600" />
-                      ) : (
-                        <Copy className="h-3 w-3" />
-                      )}
-                    </button>
-                  )}
-                </div>
-                <p className="mt-1 font-mono text-[11px] text-slate-800 break-all">
-                  {issueTx?.contractAddress || 'Not configured'}
-                </p>
-              </div>
-
-              <Separator />
-
-              {/* Certificate Hash */}
-              <div>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-500 font-medium">Certificate SHA-256 Hash</span>
-                  <button
-                    type="button"
-                    onClick={() =>
-                      handleCopy(certificate.certificateHash, 'certHash')
-                    }
-                    className="text-slate-400 hover:text-slate-600"
-                    title="Copy SHA-256 Hash"
-                  >
-                    {copiedKey === 'certHash' ? (
-                      <Check className="h-3 w-3 text-emerald-600" />
-                    ) : (
-                      <Copy className="h-3 w-3" />
-                    )}
+            <CardContent className="pt-5 space-y-3 font-mono text-xs">
+              <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-1">
+                <span className="text-slate-400 text-[10px] block uppercase">Cryptographic SHA-256 Hash</span>
+                <div className="flex items-center justify-between gap-2">
+                  <span className="text-slate-800 font-bold truncate text-[11px]">{certificate.certificateHash}</span>
+                  <button onClick={() => handleCopy(certificate.certificateHash, 'SHA-256 Hash')} className="text-slate-400 hover:text-slate-600">
+                    <Copy className="h-3.5 w-3.5" />
                   </button>
                 </div>
-                <p className="mt-1 font-mono text-[11px] text-slate-800 break-all">
-                  {certificate.certificateHash}
-                </p>
               </div>
 
-              {/* Revoke Tx if exists */}
-              {revokeTx && (
+              {certificate.transactions?.[0] && (
                 <>
-                  <Separator />
-                  <div className="rounded border border-rose-100 bg-rose-50 p-2 text-rose-800">
-                    <span className="font-semibold">Revocation Transaction:</span>
-                    <a
-                      href={getEtherscanUrl(
-                        revokeTx.txHash,
-                        revokeTx.networkName
-                      )}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="mt-0.5 flex items-center gap-1 font-mono text-[11px] underline break-all"
-                    >
-                      <span>{shortenHash(revokeTx.txHash, 8)}</span>
-                      <ExternalLink className="h-3 w-3" />
-                    </a>
+                  <div className="rounded-xl bg-slate-50 p-3 border border-slate-100 space-y-1">
+                    <span className="text-slate-400 text-[10px] block uppercase">Ethereum Transaction Hash</span>
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-slate-800 font-bold truncate text-[11px]">{certificate.transactions[0].txHash}</span>
+                      <button onClick={() => handleCopy(certificate.transactions[0].txHash, 'Tx Hash')} className="text-slate-400 hover:text-slate-600">
+                        <Copy className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-2 gap-3 text-[11px]">
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <span className="text-slate-400 block text-[10px]">Block Number</span>
+                      <span className="font-bold text-slate-800">{certificate.transactions[0].blockNumber}</span>
+                    </div>
+                    <div className="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                      <span className="text-slate-400 block text-[10px]">Network</span>
+                      <span className="font-bold text-emerald-600">{certificate.transactions[0].networkName}</span>
+                    </div>
                   </div>
                 </>
               )}
             </CardContent>
           </Card>
 
-          {/* QR Code Card if available */}
+          {/* QR Code Verification Display */}
           {certificate.qrCodeData && (
-            <Card className="border-slate-200 bg-white shadow-sm text-center">
-              <CardHeader className="pb-2">
-                <CardTitle className="text-sm font-semibold">
-                  Verification QR Code
-                </CardTitle>
-                <CardDescription className="text-xs">
-                  Scan to verify authentic on-chain credential
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="flex flex-col items-center pt-2">
+            <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden p-6 text-center space-y-3">
+              <div className="flex justify-center">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={certificate.qrCodeData}
-                  alt={`QR Code for ${certificate.certificateId}`}
-                  className="h-36 w-36 rounded-md border border-slate-200 p-1 shadow-xs"
+                  alt="Certificate Verification QR Code"
+                  className="h-36 w-36 rounded-2xl border border-slate-200 p-2 shadow-2xs"
                 />
-              </CardContent>
+              </div>
+              <div>
+                <p className="text-xs font-bold text-slate-900">Instant Camera QR Verification</p>
+                <p className="text-[11px] text-slate-500">Scan with any mobile camera to verify on Ethereum</p>
+              </div>
             </Card>
           )}
         </div>
       </div>
 
-      {/* Revocation Confirmation Dialog */}
+      {/* Revocation Dialog */}
       <Dialog open={isRevokeDialogOpen} onOpenChange={setIsRevokeDialogOpen}>
-        <DialogContent className="sm:max-w-md">
+        <DialogContent className="sm:max-w-md bg-white rounded-2xl p-6">
           <DialogHeader>
-            <div className="flex items-center gap-2 text-rose-600">
-              <ShieldAlert className="h-5 w-5" />
-              <DialogTitle className="text-lg">Revoke Certificate</DialogTitle>
+            <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-rose-100 text-rose-600">
+              <ShieldAlert className="h-6 w-6" />
             </div>
-            <DialogDescription className="text-slate-600 pt-1">
-              Revoking will permanently change this certificate&apos;s status on the Ethereum blockchain.
+            <DialogTitle className="text-center text-lg font-[900] text-slate-900">
+              Confirm Blockchain Revocation
+            </DialogTitle>
+            <DialogDescription className="text-center text-xs text-slate-500">
+              This will permanently invalidate Certificate <span className="font-mono font-bold text-[#C8102E]">{certificate.certificateId}</span> on the smart contract.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4 py-2">
-            <div className="rounded-md border border-rose-100 bg-rose-50/50 p-3 text-xs">
-              <p>
-                <span className="font-medium text-slate-700">Certificate ID:</span>{' '}
-                <span className="font-mono font-semibold text-rose-700">
-                  {certificate.certificateId}
-                </span>
-              </p>
-              <p className="mt-1">
-                <span className="font-medium text-slate-700">Recipient:</span>{' '}
-                <span className="text-slate-900 font-medium">
-                  {certificate.recipientName}
-                </span>
-              </p>
-            </div>
-
-            <div className="space-y-2">
-              <Label htmlFor="revokeReason" className="text-xs font-semibold">
-                Reason for Revocation *
-              </Label>
-              <Textarea
-                id="revokeReason"
-                placeholder="State the reason for certificate revocation..."
-                value={revokeReason}
-                onChange={(e) => setRevokeReason(e.target.value)}
-                disabled={isRevoking}
-                rows={3}
-                className="text-xs"
-              />
-              <p className="text-[11px] text-slate-500">
-                Minimum 5 characters. This explanation will be displayed publicly.
-              </p>
-            </div>
+          <div className="space-y-3 pt-2">
+            <Label htmlFor="detailRevokeReason" className="text-xs font-bold text-slate-700">
+              Official Revocation Reason <span className="text-rose-500">*</span>
+            </Label>
+            <Textarea
+              id="detailRevokeReason"
+              placeholder="State the official audit reason..."
+              value={revokeReason}
+              onChange={(e) => setRevokeReason(e.target.value)}
+              rows={3}
+              className="text-xs rounded-xl border-slate-200 focus:border-rose-500"
+            />
           </div>
 
-          <DialogFooter className="gap-2 sm:gap-0">
+          <DialogFooter className="mt-4 flex gap-2 sm:justify-end">
             <Button
               type="button"
               variant="outline"
+              size="sm"
               onClick={() => setIsRevokeDialogOpen(false)}
               disabled={isRevoking}
+              className="rounded-xl text-xs font-semibold border-slate-200"
             >
               Cancel
             </Button>
             <Button
               type="button"
-              variant="destructive"
-              onClick={handleConfirmRevoke}
-              disabled={isRevoking || revokeReason.trim().length < 5}
-              className="gap-2"
+              size="sm"
+              onClick={handleRevokeSubmit}
+              disabled={isRevoking}
+              className="rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs"
             >
               {isRevoking ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  <span>Revoking On-Chain...</span>
+                  <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
+                  Mining Invalidation...
                 </>
               ) : (
-                <>
-                  <Ban className="h-4 w-4" />
-                  <span>Confirm Revocation</span>
-                </>
+                'Confirm Revocation'
               )}
             </Button>
           </DialogFooter>

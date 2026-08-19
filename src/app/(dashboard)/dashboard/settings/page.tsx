@@ -15,6 +15,8 @@ import {
   Lock,
   Loader2,
   ShieldCheck,
+  Globe,
+  CheckCircle2,
 } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -29,6 +31,7 @@ import {
 } from '@/components/ui/card';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/components/ui/use-toast';
+import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function SettingsPage() {
   const { organization } = useSupabaseAuth();
@@ -43,21 +46,24 @@ export default function SettingsPage() {
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Contract address (can be from env or default)
+  const orgName = organization?.name || 'Oxford Institute of Technology';
+  const orgEmail = organization?.email || 'admin@oxford.edu';
+
+  // Contract address
   const contractAddress =
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
     '0x5FbDB2315678afecb367f032d93F642f64180aa3';
   const networkMode =
     process.env.NEXT_PUBLIC_NETWORK_MODE === 'sepolia'
       ? 'Sepolia Testnet'
-      : 'Hardhat Local / Sepolia Testnet';
+      : 'Hardhat Local / Sepolia EVM';
 
   const handleCopy = (text: string, key: string) => {
     navigator.clipboard.writeText(text);
     setCopiedKey(key);
     toast({
       title: 'Copied to Clipboard',
-      description: `${key} has been copied.`,
+      description: `${key} copied.`,
     });
     setTimeout(() => setCopiedKey(null), 2000);
   };
@@ -66,8 +72,8 @@ export default function SettingsPage() {
     e.preventDefault();
     setPasswordError(null);
 
-    if (!newPassword || newPassword.length < 6) {
-      setPasswordError('New password must be at least 6 characters long.');
+    if (!newPassword || newPassword.length < 8) {
+      setPasswordError('New password must be at least 8 characters long.');
       return;
     }
 
@@ -100,142 +106,188 @@ export default function SettingsPage() {
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPasswordError(err?.message || 'Failed to update password.');
+      setPasswordError(err?.message || 'Error updating password.');
     } finally {
       setIsUpdatingPassword(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-4xl space-y-8">
-      {/* Page Header */}
+    <div className="space-y-8 max-w-5xl">
+      {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-3xl">
+        <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl">
           Organization Settings
         </h1>
-        <p className="mt-1 text-sm text-slate-500">
-          Manage your organization profile, security credentials, and inspect blockchain infrastructure configurations.
+        <p className="text-xs text-slate-500 mt-1">
+          Manage your verified institution profile, smart contract connection, and account security.
         </p>
       </div>
 
-      <div className="grid gap-6">
-        {/* Organization Account Info Card */}
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 text-blue-600">
-              <Building2 className="h-5 w-5" />
-              <CardTitle className="text-lg">Organization Profile</CardTitle>
+      <div className="space-y-6">
+        {/* Organization Profile Card */}
+        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-base font-[900] text-slate-900">
+                Verified Authority Profile
+              </CardTitle>
+              <CardDescription className="text-xs text-slate-500">
+                Identity details stamped onto issued blockchain certificates
+              </CardDescription>
             </div>
-            <CardDescription>
-              Details of the authenticated issuing institution
-            </CardDescription>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200">
+              <CheckCircle2 className="h-3.5 w-3.5" />
+              Verified Authority
+            </span>
           </CardHeader>
-
-          <CardContent className="space-y-6 pt-6">
-            <div className="grid gap-6 sm:grid-cols-2">
-              {/* Organization Name */}
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Organization Name
-                </span>
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/75 px-3 py-2.5">
-                  <Building2 className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-semibold text-slate-900">
-                    {organization?.name || 'Issuer Organization'}
-                  </span>
-                </div>
+          <CardContent className="pt-6 space-y-4">
+            <div className="flex items-center gap-4">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#9E1B32] to-[#C8102E] text-white text-xl font-[900] shadow-sm">
+                {orgName.charAt(0).toUpperCase()}
               </div>
-
-              {/* Admin Email */}
-              <div className="space-y-1.5">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Registered Email
-                </span>
-                <div className="flex items-center gap-2 rounded-md border border-slate-200 bg-slate-50/75 px-3 py-2.5">
-                  <Mail className="h-4 w-4 text-slate-400" />
-                  <span className="text-sm font-medium text-slate-800">
-                    {organization?.email || 'admin@organization.edu'}
-                  </span>
-                </div>
+              <div className="space-y-1">
+                <h3 className="text-base font-[900] text-slate-900">{orgName}</h3>
+                <p className="text-xs text-slate-500 font-mono">{orgEmail}</p>
               </div>
             </div>
 
-            <div className="rounded-md border border-blue-100 bg-blue-50/60 p-4 text-xs text-blue-800 flex items-start gap-2.5">
-              <Info className="h-4 w-4 text-blue-600 shrink-0 mt-0.5" />
-              <div>
-                <p className="font-semibold">Issuer Authority Status: Verified (Supabase Auth)</p>
-                <p className="mt-0.5 text-blue-700 leading-relaxed">
-                  Your organization account is authenticated via Supabase and authorized to sign, anchor, and revoke cryptographic credentials on the blockchain registry.
-                </p>
+            <Separator className="bg-slate-100" />
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+              <div className="space-y-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 font-bold block">Authority Type:</span>
+                <span className="font-semibold text-slate-800">Higher Education / Accredited Institution</span>
+              </div>
+              <div className="space-y-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
+                <span className="text-slate-400 font-bold block">Verification Engine:</span>
+                <span className="font-semibold text-[#C8102E]">Citadel Ethereum Sepolia EVM</span>
               </div>
             </div>
           </CardContent>
         </Card>
 
-        {/* Security & Password Card */}
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 text-blue-600">
-              <ShieldCheck className="h-5 w-5" />
-              <CardTitle className="text-lg">Security & Password</CardTitle>
+        {/* Blockchain Node & Smart Contract Settings */}
+        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-base font-[900] text-slate-900">
+                  Smart Contract Ledger Configuration
+                </CardTitle>
+                <CardDescription className="text-xs text-slate-500">
+                  On-chain parameters for CertificateRegistry.sol
+                </CardDescription>
+              </div>
+              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-mono font-bold">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                {networkMode}
+              </span>
             </div>
-            <CardDescription>
-              Update your account password and security credentials
+          </CardHeader>
+          <CardContent className="pt-6 space-y-4 font-mono text-xs">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700 font-sans">
+                Deployed Contract Address
+              </Label>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 p-3 text-slate-800">
+                <span className="truncate text-xs">{contractAddress}</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy(contractAddress, 'Contract Address')}
+                  className="ml-2 text-slate-400 hover:text-slate-700"
+                >
+                  {copiedKey === 'Contract Address' ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <div className="space-y-1.5">
+              <Label className="text-xs font-bold text-slate-700 font-sans">
+                Public JSON-RPC Endpoint
+              </Label>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 p-3 text-slate-800">
+                <span className="truncate text-xs">http://127.0.0.1:8545 / https://rpc.sepolia.org</span>
+                <button
+                  type="button"
+                  onClick={() => handleCopy('https://rpc.sepolia.org', 'RPC Endpoint')}
+                  className="ml-2 text-slate-400 hover:text-slate-700"
+                >
+                  {copiedKey === 'RPC Endpoint' ? (
+                    <Check className="h-4 w-4 text-emerald-600" />
+                  ) : (
+                    <Copy className="h-4 w-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Security & Password */}
+        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
+          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
+            <CardTitle className="text-base font-[900] text-slate-900">
+              Account Security & Password
+            </CardTitle>
+            <CardDescription className="text-xs text-slate-500">
+              Update your organization password
             </CardDescription>
           </CardHeader>
-
           <CardContent className="pt-6">
             <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
               {passwordError && (
-                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
                   {passwordError}
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <Label htmlFor="newPassword" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="newPassword" className="text-xs font-bold text-slate-700">
                   New Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
                     id="newPassword"
                     type="password"
-                    placeholder="At least 6 characters"
+                    placeholder="Minimum 8 characters"
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
-                    disabled={isUpdatingPassword}
-                    className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                    className="pl-10 h-10 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
                   />
                 </div>
               </div>
 
               <div className="space-y-1.5">
-                <Label htmlFor="confirmNewPassword" className="text-sm font-medium text-slate-700">
+                <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">
                   Confirm New Password
                 </Label>
                 <div className="relative">
-                  <Lock className="absolute left-3 top-3 h-4 w-4 text-slate-400" />
+                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   <Input
-                    id="confirmNewPassword"
+                    id="confirmPassword"
                     type="password"
-                    placeholder="Confirm new password"
+                    placeholder="Re-enter password"
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
-                    disabled={isUpdatingPassword}
-                    className="pl-9 text-slate-900 focus-visible:ring-blue-500"
+                    className="pl-10 h-10 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
                   />
                 </div>
               </div>
 
               <Button
                 type="submit"
-                disabled={isUpdatingPassword || !newPassword}
-                className="bg-blue-600 text-white hover:bg-blue-700 shadow-sm"
+                disabled={isUpdatingPassword}
+                className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-xs"
               >
                 {isUpdatingPassword ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
                     Updating...
                   </>
                 ) : (
@@ -243,98 +295,6 @@ export default function SettingsPage() {
                 )}
               </Button>
             </form>
-          </CardContent>
-        </Card>
-
-        {/* Blockchain Configuration Card */}
-        <Card className="border-slate-200 bg-white shadow-sm">
-          <CardHeader className="border-b border-slate-100 pb-4">
-            <div className="flex items-center gap-2 text-blue-600">
-              <Cpu className="h-5 w-5" />
-              <CardTitle className="text-lg">Blockchain Configuration</CardTitle>
-            </div>
-            <CardDescription>
-              Smart contract parameters and Ethereum decentralized ledger settings
-            </CardDescription>
-          </CardHeader>
-
-          <CardContent className="space-y-6 pt-6 text-sm">
-            {/* Network Mode */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
-              <div>
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                  Active Network
-                </span>
-                <p className="mt-0.5 font-medium text-slate-800">
-                  {networkMode}
-                </p>
-              </div>
-              <Badge variant="valid" className="w-fit text-xs">
-                Live & Connected
-              </Badge>
-            </div>
-
-            <Separator />
-
-            {/* Smart Contract Address */}
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-medium uppercase tracking-wider text-slate-500">
-                  CertificateRegistry Contract Address
-                </span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(contractAddress, 'Contract Address')}
-                  className="flex items-center gap-1 text-xs text-blue-600 hover:text-blue-700"
-                >
-                  {copiedKey === 'Contract Address' ? (
-                    <>
-                      <Check className="h-3.5 w-3.5 text-emerald-600" />
-                      <span className="text-emerald-600">Copied</span>
-                    </>
-                  ) : (
-                    <>
-                      <Copy className="h-3.5 w-3.5" />
-                      <span>Copy Address</span>
-                    </>
-                  )}
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between rounded-md border border-slate-200 bg-slate-50/80 p-3">
-                <span className="font-mono text-xs text-slate-900 break-all">
-                  {contractAddress}
-                </span>
-              </div>
-              <p className="text-[12px] text-slate-500">
-                All issued certificates are anchored directly to this smart contract on the blockchain.
-              </p>
-            </div>
-
-            <Separator />
-
-            {/* Security Parameters */}
-            <div className="grid gap-4 sm:grid-cols-2 text-xs">
-              <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3.5">
-                <div className="flex items-center gap-2 font-semibold text-slate-800">
-                  <KeyRound className="h-4 w-4 text-blue-600" />
-                  <span>Hash Algorithm</span>
-                </div>
-                <p className="mt-1 text-slate-600">
-                  SHA-256 cryptographic hash calculated across certificate ID, recipient, course, and issuer signature.
-                </p>
-              </div>
-
-              <div className="rounded-lg border border-slate-200 bg-slate-50/50 p-3.5">
-                <div className="flex items-center gap-2 font-semibold text-slate-800">
-                  <FileCheck2 className="h-4 w-4 text-blue-600" />
-                  <span>Storage Model</span>
-                </div>
-                <p className="mt-1 text-slate-600">
-                  Cryptographic proofs anchored on-chain; encrypted metadata persisted securely in PostgreSQL.
-                </p>
-              </div>
-            </div>
           </CardContent>
         </Card>
       </div>
