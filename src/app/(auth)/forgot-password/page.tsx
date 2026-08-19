@@ -2,21 +2,12 @@
 
 import React, { useState } from 'react';
 import Link from 'next/link';
-import { KeyRound, Loader2, AlertCircle, Mail, ArrowRight, CheckCircle2, ArrowLeft } from 'lucide-react';
+import { AlertCircle, ArrowLeft, Mail, MailCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { Field } from '@/components/ui/field';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
 
 export default function ForgotPasswordPage() {
   const { toast } = useToast();
@@ -27,153 +18,139 @@ export default function ForgotPasswordPage() {
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [isSubmitted, setIsSubmitted] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setErrorMessage(null);
 
     const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail) {
-      setErrorMessage('Please enter your registered email address.');
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(cleanEmail)) {
+      setErrorMessage('Enter the email address registered to your organisation.');
       return;
     }
 
     setIsLoading(true);
 
     try {
-      const redirectUrl = `${window.location.origin}/auth/callback?next=/reset-password`;
       const { error } = await supabase.auth.resetPasswordForEmail(cleanEmail, {
-        redirectTo: redirectUrl,
+        redirectTo: `${window.location.origin}/auth/callback?next=/reset-password`,
       });
 
       if (error) {
         setErrorMessage(error.message);
-        toast({
-          variant: 'destructive',
-          title: 'Request Failed',
-          description: error.message,
-        });
-        setIsLoading(false);
         return;
       }
 
       setIsSubmitted(true);
       toast({
-        title: 'Reset Link Sent',
-        description: 'Check your email inbox for password reset instructions.',
+        variant: 'success',
+        title: 'Reset link sent',
+        description: 'Check your inbox for the next step.',
       });
     } catch (err: any) {
-      const msg = err?.message || 'An unexpected error occurred.';
-      setErrorMessage(msg);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: msg,
-      });
+      setErrorMessage(err?.message || 'Something went wrong. Please try again.');
     } finally {
       setIsLoading(false);
     }
   };
 
-  return (
-    <Card className="w-full border-slate-200/90 bg-white shadow-xl rounded-3xl overflow-hidden">
-      <CardHeader className="space-y-2 text-center pb-6 bg-slate-50/70 border-b border-slate-100">
-        <div className="mx-auto mb-2 flex items-center justify-center">
-          <CitadelLogo className="h-14 w-14" size={64} />
+  if (isSubmitted) {
+    return (
+      <div className="space-y-7 text-center">
+        <div className="flex justify-center">
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-xl border border-success-line bg-success-soft text-success-fg"
+            aria-hidden
+          >
+            <MailCheck className="h-5 w-5" />
+          </span>
         </div>
-        <CardTitle className="text-2xl font-[900] tracking-tight text-slate-900">
-          Reset Password
-        </CardTitle>
-        <CardDescription className="text-xs text-slate-500">
-          Enter your organization email and we&apos;ll send you a link to reset your password
-        </CardDescription>
-      </CardHeader>
 
-      <CardContent className="pt-6">
-        {isSubmitted ? (
-          <div className="space-y-4 text-center py-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-[900] text-slate-900">Check Your Email</h3>
-              <p className="text-xs text-slate-600 leading-relaxed">
-                We sent a secure password reset link to{' '}
-                <span className="font-bold text-slate-800 font-mono">{email}</span>.
-              </p>
-            </div>
-            <p className="text-[11px] text-slate-400">
-              Click the link in the email to choose a new password.
-            </p>
-            <div className="pt-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setIsSubmitted(false);
-                  setEmail('');
-                }}
-                className="rounded-full text-xs font-semibold"
-              >
-                Send to another email
-              </Button>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 animate-in fade-in-50">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+        <div className="space-y-2">
+          <h1 className="font-serif text-2xl font-semibold tracking-tight text-ink">
+            Check your email
+          </h1>
+          <p className="text-sm leading-relaxed text-ink-muted">
+            If an account exists for{' '}
+            <span className="metadata text-ink-secondary">{email}</span>, a reset
+            link is on its way. It expires in one hour.
+          </p>
+        </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="email" className="text-xs font-bold text-slate-700">
-                Registered Email Address
-              </Label>
-              <div className="relative">
-                <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  placeholder="admin@oxford.edu"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="email"
-                  required
-                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
-                />
-              </div>
-            </div>
+        <div className="space-y-3">
+          <Button asChild variant="outline" className="w-full">
+            <Link href="/login">
+              <ArrowLeft aria-hidden />
+              Back to sign in
+            </Link>
+          </Button>
+          <button
+            type="button"
+            onClick={() => setIsSubmitted(false)}
+            className="rounded-sm text-sm font-medium text-ink-muted transition-colors hover:text-ink"
+          >
+            Use a different email address
+          </button>
+        </div>
+      </div>
+    );
+  }
 
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-11 rounded-full bg-[#C8102E] text-white hover:bg-[#9E1B32] font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Sending Link...
-                </>
-              ) : (
-                'Send Password Reset Link'
-              )}
-            </Button>
-          </form>
-        )}
-      </CardContent>
+  return (
+    <div className="space-y-7">
+      <div className="space-y-2">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight text-ink">
+          Reset your password
+        </h1>
+        <p className="text-sm leading-relaxed text-ink-muted">
+          Enter your organisation&apos;s email address and we&apos;ll send a secure
+          link to choose a new password.
+        </p>
+      </div>
 
-      <CardFooter className="flex justify-center border-t border-slate-100 bg-slate-50/50 py-4 text-center text-xs">
+      {errorMessage ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger-fg"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span className="leading-relaxed">{errorMessage}</span>
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <Field htmlFor="email" label="Email address" required>
+          <Input
+            id="email"
+            name="email"
+            type="email"
+            autoComplete="email"
+            autoFocus
+            placeholder="registrar@university.edu"
+            leading={<Mail />}
+            value={email}
+            disabled={isLoading}
+            invalid={Boolean(errorMessage)}
+            onChange={(event) => {
+              setEmail(event.target.value);
+              if (errorMessage) setErrorMessage(null);
+            }}
+          />
+        </Field>
+
+        <Button type="submit" size="lg" className="w-full" loading={isLoading}>
+          {isLoading ? 'Sending link…' : 'Send reset link'}
+        </Button>
+      </form>
+
+      <p className="border-t border-line pt-6 text-sm text-ink-muted">
+        Remembered it?{' '}
         <Link
           href="/login"
-          className="inline-flex items-center gap-1.5 font-bold text-slate-700 hover:text-[#C8102E] transition"
+          className="rounded-sm font-medium text-brand transition-colors hover:text-brand-strong hover:underline"
         >
-          <ArrowLeft className="h-3.5 w-3.5" />
-          <span>Back to Sign In</span>
+          Back to sign in
         </Link>
-      </CardFooter>
-    </Card>
+      </p>
+    </div>
   );
 }

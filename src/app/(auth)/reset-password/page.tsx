@@ -3,21 +3,14 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Lock, Loader2, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Lock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-  CardFooter,
-} from '@/components/ui/card';
+import { Field } from '@/components/ui/field';
 import { useToast } from '@/components/ui/use-toast';
 import { createClient } from '@/utils/supabase/client';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function ResetPasswordPage() {
   const router = useRouter();
@@ -26,172 +19,147 @@ export default function ResetPasswordPage() {
 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
+  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
     setErrorMessage(null);
 
-    if (!password) {
-      setErrorMessage('Please enter a new password.');
-      return;
+    const next: typeof errors = {};
+    if (password.length < MIN_PASSWORD_LENGTH) {
+      next.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
     }
-
-    if (password.length < 8) {
-      setErrorMessage('Password must be at least 8 characters long.');
-      return;
-    }
-
     if (password !== confirmPassword) {
-      setErrorMessage('Passwords do not match.');
-      return;
+      next.confirm = 'The two passwords do not match.';
     }
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
     setIsLoading(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: password,
-      });
+      const { error } = await supabase.auth.updateUser({ password });
 
       if (error) {
         setErrorMessage(error.message);
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: error.message,
-        });
         setIsLoading(false);
         return;
       }
 
       setIsSuccess(true);
       toast({
-        title: 'Password Updated',
-        description: 'Your password has been successfully reset. Redirecting...',
+        variant: 'success',
+        title: 'Password updated',
+        description: 'Signing you in to your dashboard.',
       });
-
-      setTimeout(() => {
-        router.push('/dashboard');
-      }, 1500);
+      setTimeout(() => router.push('/dashboard'), 1500);
     } catch (err: any) {
-      const msg = err?.message || 'An error occurred while updating your password.';
-      setErrorMessage(msg);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: msg,
-      });
+      setErrorMessage(err?.message || 'Something went wrong. Please try again.');
       setIsLoading(false);
     }
   };
 
-  return (
-    <Card className="w-full border-slate-200/90 bg-white shadow-xl rounded-3xl overflow-hidden">
-      <CardHeader className="space-y-2 text-center pb-6 bg-slate-50/70 border-b border-slate-100">
-        <div className="mx-auto mb-2 flex items-center justify-center">
-          <CitadelLogo className="h-14 w-14" size={64} />
+  if (isSuccess) {
+    return (
+      <div className="space-y-7 text-center">
+        <div className="flex justify-center">
+          <span
+            className="flex h-12 w-12 items-center justify-center rounded-xl border border-success-line bg-success-soft text-success-fg"
+            aria-hidden
+          >
+            <CheckCircle2 className="h-5 w-5" />
+          </span>
         </div>
-        <CardTitle className="text-2xl font-[900] tracking-tight text-slate-900">
-          Create New Password
-        </CardTitle>
-        <CardDescription className="text-xs text-slate-500">
-          Please enter your new secure password below
-        </CardDescription>
-      </CardHeader>
+        <div className="space-y-2">
+          <h1 className="font-serif text-2xl font-semibold tracking-tight text-ink">
+            Password updated
+          </h1>
+          <p className="text-sm text-ink-muted">
+            Taking you to your dashboard…
+          </p>
+        </div>
+        <Button asChild variant="outline" className="w-full">
+          <Link href="/dashboard">Go to dashboard</Link>
+        </Button>
+      </div>
+    );
+  }
 
-      <CardContent className="pt-6">
-        {isSuccess ? (
-          <div className="space-y-4 text-center py-4">
-            <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-emerald-100 text-emerald-600">
-              <CheckCircle2 className="h-7 w-7" />
-            </div>
-            <div className="space-y-1">
-              <h3 className="text-base font-[900] text-slate-900">Password Changed!</h3>
-              <p className="text-xs text-slate-600">
-                You are being redirected to your organization dashboard...
-              </p>
-            </div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {errorMessage && (
-              <div className="flex items-start gap-2.5 rounded-2xl border border-red-200 bg-red-50 p-3.5 text-xs text-red-700 animate-in fade-in-50">
-                <AlertCircle className="h-4 w-4 mt-0.5 shrink-0 text-red-500" />
-                <span>{errorMessage}</span>
-              </div>
-            )}
+  return (
+    <div className="space-y-7">
+      <div className="space-y-2">
+        <h1 className="font-serif text-2xl font-semibold tracking-tight text-ink">
+          Choose a new password
+        </h1>
+        <p className="text-sm leading-relaxed text-ink-muted">
+          This replaces the password for your issuer account.
+        </p>
+      </div>
 
-            <div className="space-y-1.5">
-              <Label htmlFor="password" className="text-xs font-bold text-slate-700">
-                New Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  placeholder="Minimum 8 characters"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="new-password"
-                  required
-                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
-                />
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">
-                Confirm New Password
-              </Label>
-              <div className="relative">
-                <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  placeholder="Re-enter your password"
-                  value={confirmPassword}
-                  onChange={(e) => setConfirmPassword(e.target.value)}
-                  disabled={isLoading}
-                  autoComplete="new-password"
-                  required
-                  className="pl-10 h-11 rounded-xl text-xs text-slate-900 border-slate-200 focus:border-[#C8102E]"
-                />
-              </div>
-            </div>
-
-            <Button
-              type="submit"
-              disabled={isLoading}
-              className="w-full h-11 rounded-full bg-[#C8102E] text-white hover:bg-[#9E1B32] font-bold text-xs shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
-            >
-              {isLoading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Updating Password...
-                </>
-              ) : (
-                'Save New Password'
-              )}
-            </Button>
-          </form>
-        )}
-      </CardContent>
-
-      <CardFooter className="flex justify-center border-t border-slate-100 bg-slate-50/50 py-4 text-center text-xs">
-        <Link
-          href="/login"
-          className="font-bold text-slate-700 hover:text-[#C8102E] transition"
+      {errorMessage ? (
+        <div
+          role="alert"
+          className="flex items-start gap-2.5 rounded-lg border border-danger-line bg-danger-soft p-3 text-sm text-danger-fg"
         >
-          Back to Sign In
-        </Link>
-      </CardFooter>
-    </Card>
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
+          <span className="leading-relaxed">{errorMessage}</span>
+        </div>
+      ) : null}
+
+      <form onSubmit={handleSubmit} noValidate className="space-y-5">
+        <Field
+          htmlFor="password"
+          label="New password"
+          required
+          error={errors.password}
+          hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
+        >
+          <Input
+            id="password"
+            type="password"
+            autoComplete="new-password"
+            autoFocus
+            placeholder="••••••••"
+            leading={<Lock />}
+            value={password}
+            disabled={isLoading}
+            invalid={Boolean(errors.password)}
+            onChange={(event) => {
+              setPassword(event.target.value);
+              setErrors((prev) => ({ ...prev, password: undefined }));
+            }}
+          />
+        </Field>
+
+        <Field
+          htmlFor="confirmPassword"
+          label="Confirm new password"
+          required
+          error={errors.confirm}
+        >
+          <Input
+            id="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            placeholder="••••••••"
+            leading={<Lock />}
+            value={confirmPassword}
+            disabled={isLoading}
+            invalid={Boolean(errors.confirm)}
+            onChange={(event) => {
+              setConfirmPassword(event.target.value);
+              setErrors((prev) => ({ ...prev, confirm: undefined }));
+            }}
+          />
+        </Field>
+
+        <Button type="submit" size="lg" className="w-full" loading={isLoading}>
+          {isLoading ? 'Updating…' : 'Update password'}
+        </Button>
+      </form>
+    </div>
   );
 }
