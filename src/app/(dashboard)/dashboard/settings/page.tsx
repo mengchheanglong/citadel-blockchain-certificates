@@ -4,24 +4,18 @@ import React, { useState } from 'react';
 import { useSupabaseAuth } from '@/components/auth/supabase-provider';
 import { createClient } from '@/utils/supabase/client';
 import {
+  Lock,
+  ShieldCheck,
   Building2,
   Mail,
-  Cpu,
-  Copy,
-  Check,
-  Info,
-  KeyRound,
-  FileCheck2,
-  Lock,
-  Loader2,
-  ShieldCheck,
-  Globe,
+  Network,
+  FileCode2,
+  Server,
   CheckCircle2,
 } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
+import { Field } from '@/components/ui/field';
 import {
   Card,
   CardHeader,
@@ -29,275 +23,231 @@ import {
   CardDescription,
   CardContent,
 } from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
+import { DataList, DataRow } from '@/components/ui/data-list';
+import { PageHeader } from '@/components/ui/page-header';
+import { Badge } from '@/components/ui/badge';
 import { useToast } from '@/components/ui/use-toast';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
+import { getInitials } from '@/lib/utils';
+
+const MIN_PASSWORD_LENGTH = 8;
 
 export default function SettingsPage() {
   const { organization } = useSupabaseAuth();
   const { toast } = useToast();
   const [supabase] = useState(() => createClient());
 
-  const [copiedKey, setCopiedKey] = useState<string | null>(null);
-
-  // Change Password state
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState<string | null>(null);
+  const [errors, setErrors] = useState<{ password?: string; confirm?: string }>({});
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const orgName = organization?.name || 'Oxford Institute of Technology';
-  const orgEmail = organization?.email || 'admin@oxford.edu';
+  const orgName = organization?.name || 'Your organisation';
+  const orgEmail = organization?.email || '';
 
-  // Contract address
   const contractAddress =
     process.env.NEXT_PUBLIC_CONTRACT_ADDRESS ||
     '0x5FbDB2315678afecb367f032d93F642f64180aa3';
-  const networkMode =
-    process.env.NEXT_PUBLIC_NETWORK_MODE === 'sepolia'
-      ? 'Sepolia Testnet'
-      : 'Hardhat Local / Sepolia EVM';
+  const isSepolia = process.env.NEXT_PUBLIC_NETWORK_MODE === 'sepolia';
+  const networkName = isSepolia ? 'Ethereum Sepolia' : 'Local Hardhat node';
+  const rpcEndpoint = isSepolia
+    ? 'https://rpc.sepolia.org'
+    : 'http://127.0.0.1:8545';
 
-  const handleCopy = (text: string, key: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedKey(key);
-    toast({
-      title: 'Copied to Clipboard',
-      description: `${key} copied.`,
-    });
-    setTimeout(() => setCopiedKey(null), 2000);
-  };
+  const handleUpdatePassword = async (event: React.FormEvent) => {
+    event.preventDefault();
 
-  const handleUpdatePassword = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasswordError(null);
-
-    if (!newPassword || newPassword.length < 8) {
-      setPasswordError('New password must be at least 8 characters long.');
-      return;
+    const next: typeof errors = {};
+    if (newPassword.length < MIN_PASSWORD_LENGTH) {
+      next.password = `Use at least ${MIN_PASSWORD_LENGTH} characters.`;
     }
-
     if (newPassword !== confirmPassword) {
-      setPasswordError('Passwords do not match.');
-      return;
+      next.confirm = 'The two passwords do not match.';
     }
+    setErrors(next);
+    if (Object.keys(next).length > 0) return;
 
-    setIsUpdatingPassword(true);
-
+    setIsUpdating(true);
     try {
-      const { error } = await supabase.auth.updateUser({
-        password: newPassword,
-      });
+      const { error } = await supabase.auth.updateUser({ password: newPassword });
 
       if (error) {
-        setPasswordError(error.message);
-        toast({
-          variant: 'destructive',
-          title: 'Update Failed',
-          description: error.message,
-        });
+        setErrors({ password: error.message });
         return;
       }
 
       toast({
-        title: 'Password Updated',
-        description: 'Your account password has been updated successfully.',
+        variant: 'success',
+        title: 'Password updated',
+        description: 'Use your new password the next time you sign in.',
       });
       setNewPassword('');
       setConfirmPassword('');
     } catch (err: any) {
-      setPasswordError(err?.message || 'Error updating password.');
+      setErrors({ password: err?.message || 'The password could not be updated.' });
     } finally {
-      setIsUpdatingPassword(false);
+      setIsUpdating(false);
     }
   };
 
   return (
-    <div className="space-y-8 max-w-5xl">
-      {/* Header */}
-      <div>
-        <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl">
-          Organization Settings
-        </h1>
-        <p className="text-xs text-slate-500 mt-1">
-          Manage your verified institution profile, smart contract connection, and account security.
-        </p>
-      </div>
+    <div className="max-w-4xl space-y-6">
+      <PageHeader
+        title="Organisation settings"
+        description="Your issuing identity, the ledger you write to, and account security."
+      />
 
-      <div className="space-y-6">
-        {/* Organization Profile Card */}
-        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4 flex flex-row items-center justify-between">
-            <div>
-              <CardTitle className="text-base font-[900] text-slate-900">
-                Verified Authority Profile
-              </CardTitle>
-              <CardDescription className="text-xs text-slate-500">
-                Identity details stamped onto issued blockchain certificates
-              </CardDescription>
-            </div>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-100 text-emerald-700 text-xs font-bold border border-emerald-200">
-              <CheckCircle2 className="h-3.5 w-3.5" />
-              Verified Authority
-            </span>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-gradient-to-tr from-[#9E1B32] to-[#C8102E] text-white text-xl font-[900] shadow-sm">
-                {orgName.charAt(0).toUpperCase()}
-              </div>
-              <div className="space-y-1">
-                <h3 className="text-base font-[900] text-slate-900">{orgName}</h3>
-                <p className="text-xs text-slate-500 font-mono">{orgEmail}</p>
-              </div>
-            </div>
-
-            <Separator className="bg-slate-100" />
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
-              <div className="space-y-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 font-bold block">Authority Type:</span>
-                <span className="font-semibold text-slate-800">Higher Education / Accredited Institution</span>
-              </div>
-              <div className="space-y-1 bg-slate-50 p-3.5 rounded-2xl border border-slate-100">
-                <span className="text-slate-400 font-bold block">Verification Engine:</span>
-                <span className="font-semibold text-[#C8102E]">Citadel Ethereum Sepolia EVM</span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Blockchain Node & Smart Contract Settings */}
-        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-base font-[900] text-slate-900">
-                  Smart Contract Ledger Configuration
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500">
-                  On-chain parameters for CertificateRegistry.sol
-                </CardDescription>
-              </div>
-              <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-100 text-emerald-700 text-[11px] font-mono font-bold">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                {networkMode}
-              </span>
-            </div>
-          </CardHeader>
-          <CardContent className="pt-6 space-y-4 font-mono text-xs">
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700 font-sans">
-                Deployed Contract Address
-              </Label>
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 p-3 text-slate-800">
-                <span className="truncate text-xs">{contractAddress}</span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy(contractAddress, 'Contract Address')}
-                  className="ml-2 text-slate-400 hover:text-slate-700"
-                >
-                  {copiedKey === 'Contract Address' ? (
-                    <Check className="h-4 w-4 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-
-            <div className="space-y-1.5">
-              <Label className="text-xs font-bold text-slate-700 font-sans">
-                Public JSON-RPC Endpoint
-              </Label>
-              <div className="flex items-center justify-between rounded-xl bg-slate-50 border border-slate-200 p-3 text-slate-800">
-                <span className="truncate text-xs">http://127.0.0.1:8545 / https://rpc.sepolia.org</span>
-                <button
-                  type="button"
-                  onClick={() => handleCopy('https://rpc.sepolia.org', 'RPC Endpoint')}
-                  className="ml-2 text-slate-400 hover:text-slate-700"
-                >
-                  {copiedKey === 'RPC Endpoint' ? (
-                    <Check className="h-4 w-4 text-emerald-600" />
-                  ) : (
-                    <Copy className="h-4 w-4" />
-                  )}
-                </button>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Security & Password */}
-        <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-          <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-4">
-            <CardTitle className="text-base font-[900] text-slate-900">
-              Account Security & Password
-            </CardTitle>
-            <CardDescription className="text-xs text-slate-500">
-              Update your organization password
+      {/* ---------------------------------------------------------------- */}
+      {/* Issuing identity                                                  */}
+      {/* ---------------------------------------------------------------- */}
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Issuing identity</CardTitle>
+            <CardDescription>
+              Printed on every certificate and shown to anyone verifying one
             </CardDescription>
-          </CardHeader>
-          <CardContent className="pt-6">
-            <form onSubmit={handleUpdatePassword} className="space-y-4 max-w-md">
-              {passwordError && (
-                <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs text-red-700">
-                  {passwordError}
-                </div>
-              )}
+          </div>
+          <Badge variant="valid">
+            <CheckCircle2 className="h-3 w-3" aria-hidden />
+            Verified issuer
+          </Badge>
+        </CardHeader>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="newPassword" className="text-xs font-bold text-slate-700">
-                  New Password
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    id="newPassword"
-                    type="password"
-                    placeholder="Minimum 8 characters"
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    className="pl-10 h-10 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                  />
-                </div>
-              </div>
+        <CardContent className="space-y-5">
+          <div className="flex items-center gap-4">
+            <span
+              className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl bg-brand text-lg font-semibold text-brand-foreground"
+              aria-hidden
+            >
+              {getInitials(orgName)}
+            </span>
+            <div className="min-w-0">
+              <p className="font-serif text-lg font-semibold text-ink">{orgName}</p>
+              {orgEmail ? (
+                <p className="truncate text-sm text-ink-muted">{orgEmail}</p>
+              ) : null}
+            </div>
+          </div>
 
-              <div className="space-y-1.5">
-                <Label htmlFor="confirmPassword" className="text-xs font-bold text-slate-700">
-                  Confirm New Password
-                </Label>
-                <div className="relative">
-                  <Lock className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  <Input
-                    id="confirmPassword"
-                    type="password"
-                    placeholder="Re-enter password"
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    className="pl-10 h-10 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                  />
-                </div>
-              </div>
+          <DataList>
+            <DataRow
+              icon={<Building2 />}
+              label="Organisation name"
+              value={orgName}
+            />
+            <DataRow
+              icon={<Mail />}
+              label="Administrative contact"
+              value={orgEmail}
+              fallback="Not set"
+            />
+            <DataRow
+              icon={<ShieldCheck />}
+              label="Signing authority"
+              value="Certificates are signed by the Citadel registry contract on your behalf"
+            />
+          </DataList>
+        </CardContent>
+      </Card>
 
-              <Button
-                type="submit"
-                disabled={isUpdatingPassword}
-                className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-xs"
-              >
-                {isUpdatingPassword ? (
-                  <>
-                    <Loader2 className="mr-1.5 h-3.5 w-3.5 animate-spin" />
-                    Updating...
-                  </>
-                ) : (
-                  'Update Password'
-                )}
-              </Button>
-            </form>
-          </CardContent>
-        </Card>
-      </div>
+      {/* ---------------------------------------------------------------- */}
+      {/* Ledger                                                            */}
+      {/* ---------------------------------------------------------------- */}
+      <Card>
+        <CardHeader className="flex-row items-start justify-between gap-4">
+          <div>
+            <CardTitle>Ledger configuration</CardTitle>
+            <CardDescription>
+              Where credential hashes are written and verified
+            </CardDescription>
+          </div>
+          <span className="inline-flex items-center gap-1.5 rounded-md border border-success-line bg-success-soft px-2 py-0.5 text-2xs font-semibold uppercase tracking-[0.06em] text-success-fg">
+            <span className="h-1.5 w-1.5 rounded-full bg-success" aria-hidden />
+            Connected
+          </span>
+        </CardHeader>
+
+        <CardContent className="p-0">
+          <DataList className="rounded-none border-0">
+            <DataRow icon={<Network />} label="Network" value={networkName} />
+            <DataRow
+              icon={<FileCode2 />}
+              label="Registry contract"
+              value={contractAddress}
+              mono
+              copyValue={contractAddress}
+            />
+            <DataRow
+              icon={<Server />}
+              label="JSON-RPC endpoint"
+              value={rpcEndpoint}
+              mono
+              copyValue={rpcEndpoint}
+            />
+          </DataList>
+        </CardContent>
+      </Card>
+
+      {/* ---------------------------------------------------------------- */}
+      {/* Security                                                          */}
+      {/* ---------------------------------------------------------------- */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Account security</CardTitle>
+          <CardDescription>
+            Change the password used to sign in to the issuer portal
+          </CardDescription>
+        </CardHeader>
+
+        <CardContent>
+          <form onSubmit={handleUpdatePassword} noValidate className="max-w-sm space-y-5">
+            <Field
+              htmlFor="newPassword"
+              label="New password"
+              required
+              error={errors.password}
+              hint={`At least ${MIN_PASSWORD_LENGTH} characters.`}
+            >
+              <Input
+                id="newPassword"
+                type="password"
+                autoComplete="new-password"
+                leading={<Lock />}
+                value={newPassword}
+                invalid={Boolean(errors.password)}
+                onChange={(event) => {
+                  setNewPassword(event.target.value);
+                  setErrors((prev) => ({ ...prev, password: undefined }));
+                }}
+              />
+            </Field>
+
+            <Field
+              htmlFor="confirmPassword"
+              label="Confirm new password"
+              required
+              error={errors.confirm}
+            >
+              <Input
+                id="confirmPassword"
+                type="password"
+                autoComplete="new-password"
+                leading={<Lock />}
+                value={confirmPassword}
+                invalid={Boolean(errors.confirm)}
+                onChange={(event) => {
+                  setConfirmPassword(event.target.value);
+                  setErrors((prev) => ({ ...prev, confirm: undefined }));
+                }}
+              />
+            </Field>
+
+            <Button type="submit" loading={isUpdating}>
+              {isUpdating ? 'Updating…' : 'Update password'}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -1,45 +1,37 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import Link from 'next/link';
 import {
-  Award,
   Calendar,
   CheckCircle2,
   Download,
-  Eye,
-  Loader2,
   Mail,
   RotateCcw,
   User,
   BookOpen,
-  ArrowLeft,
   ShieldCheck,
-  FileText,
   ExternalLink,
-  Copy,
-  Check,
-  Sparkles,
-  QrCode,
-  Lock,
+  Send,
+  Info,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
+import { Field } from '@/components/ui/field';
 import {
   Card,
   CardHeader,
   CardTitle,
   CardDescription,
   CardContent,
-  CardFooter,
 } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
+import { DataList, DataRow } from '@/components/ui/data-list';
+import { PageHeader } from '@/components/ui/page-header';
+import { CertificateDocument } from '@/components/certificates/certificate-document';
 import { useToast } from '@/components/ui/use-toast';
-import { shortenHash, getEtherscanUrl, formatDate } from '@/lib/utils';
-import { CitadelLogo } from '@/components/ui/citadel-logo';
 import { useSupabaseAuth } from '@/components/auth/supabase-provider';
+import { cn, formatDate, shortenHash, getEtherscanUrl } from '@/lib/utils';
 
 interface IssuedCertificate {
   id: string;
@@ -52,6 +44,7 @@ interface IssuedCertificate {
   expiryDate?: string | null;
   certificateHash?: string;
   emailSent?: boolean;
+  qrCodeData?: string | null;
   transactions?: Array<{
     txHash: string;
     blockNumber: string;
@@ -60,492 +53,516 @@ interface IssuedCertificate {
   }>;
 }
 
+type FormState = {
+  recipientName: string;
+  recipientEmail: string;
+  courseName: string;
+  courseDescription: string;
+  expiryDate: string;
+};
+
+type FormErrors = Partial<Record<keyof FormState, string>>;
+
+const EMPTY_FORM: FormState = {
+  recipientName: '',
+  recipientEmail: '',
+  courseName: '',
+  courseDescription: '',
+  expiryDate: '',
+};
+
+const EXPIRY_PRESETS = [
+  { label: 'No expiry', months: null },
+  { label: '1 year', months: 12 },
+  { label: '2 years', months: 24 },
+  { label: '5 years', months: 60 },
+] as const;
+
 export default function IssueCertificatePage() {
   const { toast } = useToast();
   const { organization } = useSupabaseAuth();
-  const orgName = organization?.name || 'Oxford Institute of Technology';
+  const orgName = organization?.name || 'Your organisation';
 
-  // Form State
-  const [formData, setFormData] = useState({
-    recipientName: '',
-    recipientEmail: '',
-    courseName: '',
-    courseDescription: '',
-    expiryDate: '',
-  });
+  const [form, setForm] = useState<FormState>(EMPTY_FORM);
+  const [errors, setErrors] = useState<FormErrors>({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [issued, setIssued] = useState<IssuedCertificate | null>(null);
 
-  // Loading and Success States
-  const [isLoading, setIsLoading] = useState(false);
-  const [issuedCertificate, setIssuedCertificate] =
-    useState<IssuedCertificate | null>(null);
-  const [copiedField, setCopiedField] = useState<string | null>(null);
+  const today = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
-  const handleCopy = (text: string, field: string) => {
-    navigator.clipboard.writeText(text);
-    setCopiedField(field);
-    toast({
-      title: 'Copied to Clipboard',
-      description: `${field} copied.`,
-    });
-    setTimeout(() => setCopiedField(null), 2000);
+  const setValue = (key: keyof FormState, value: string) => {
+    setForm((prev) => ({ ...prev, [key]: value }));
+    setErrors((prev) => ({ ...prev, [key]: undefined }));
   };
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleSetPresetExpiry = (months: number | null) => {
+  const applyExpiryPreset = (months: number | null) => {
     if (months === null) {
-      setFormData((prev) => ({ ...prev, expiryDate: '' }));
+      setValue('expiryDate', '');
       return;
     }
-    const d = new Date();
-    d.setMonth(d.getMonth() + months);
-    setFormData((prev) => ({ ...prev, expiryDate: d.toISOString().split('T')[0] }));
+    const date = new Date();
+    date.setMonth(date.getMonth() + months);
+    setValue('expiryDate', date.toISOString().slice(0, 10));
   };
 
-  const handleResetForm = () => {
-    setFormData({
-      recipientName: '',
-      recipientEmail: '',
-      courseName: '',
-      courseDescription: '',
-      expiryDate: '',
-    });
-    setIssuedCertificate(null);
+  /** Validation lives next to the field that failed, never in a toast. */
+  const validate = (): boolean => {
+    const next: FormErrors = {};
+
+    if (!form.recipientName.trim()) {
+      next.recipientName = 'Enter the recipient’s full name as it should appear on the certificate.';
+    }
+    if (!form.recipientEmail.trim()) {
+      next.recipientEmail = 'An email address is required — the certificate is delivered to it.';
+    } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.recipientEmail.trim())) {
+      next.recipientEmail = 'That does not look like a valid email address.';
+    }
+    if (!form.courseName.trim()) {
+      next.courseName = 'Name the programme, degree or qualification being awarded.';
+    }
+    if (form.expiryDate && form.expiryDate <= today) {
+      next.expiryDate = 'The expiry date must be in the future.';
+    }
+
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!validate()) return;
 
-    if (!formData.recipientName.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Recipient Name is required.',
-      });
-      return;
-    }
-
-    if (!formData.recipientEmail.trim() || !formData.recipientEmail.includes('@')) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'A valid Recipient Email is required for delivery.',
-      });
-      return;
-    }
-
-    if (!formData.courseName.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Validation Error',
-        description: 'Course or Program title is required.',
-      });
-      return;
-    }
-
-    setIsLoading(true);
-
+    setIsSubmitting(true);
     try {
-      const payload = {
-        recipientName: formData.recipientName.trim(),
-        recipientEmail: formData.recipientEmail.trim().toLowerCase(),
-        courseName: formData.courseName.trim(),
-        courseDescription: formData.courseDescription.trim() || null,
-        expiryDate: formData.expiryDate ? new Date(formData.expiryDate).toISOString() : null,
-      };
-
       const res = await fetch('/api/certificates', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          recipientName: form.recipientName.trim(),
+          recipientEmail: form.recipientEmail.trim().toLowerCase(),
+          courseName: form.courseName.trim(),
+          courseDescription: form.courseDescription.trim() || null,
+          expiryDate: form.expiryDate
+            ? new Date(form.expiryDate).toISOString()
+            : null,
+        }),
       });
 
       const data = await res.json();
 
       if (data.success && data.certificate) {
-        setIssuedCertificate(data.certificate);
+        setIssued(data.certificate);
         toast({
-          title: 'Certificate Anchored to Blockchain!',
-          description: `Minted with Certificate ID: ${data.certificate.certificateId}`,
+          variant: 'success',
+          title: 'Certificate issued',
+          description: `${data.certificate.certificateId} has been anchored on-chain.`,
         });
       } else {
         toast({
           variant: 'destructive',
-          title: 'Issuance Failed',
-          description: data.message || 'Unable to record on smart contract.',
+          title: 'Issuance failed',
+          description:
+            data.message || 'The certificate could not be recorded on the ledger.',
         });
       }
     } catch (err: any) {
       toast({
         variant: 'destructive',
-        title: 'Network Error',
-        description: err?.message || 'Failed to issue certificate.',
+        title: 'Network error',
+        description: err?.message || 'The request did not reach the server.',
       });
     } finally {
-      setIsLoading(false);
+      setIsSubmitting(false);
     }
   };
 
-  return (
-    <div className="space-y-8">
-      {/* Header */}
-      <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-        <div>
-          <Link
-            href="/dashboard/certificates"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-900 transition mb-2"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            <span>Back to Registry</span>
-          </Link>
-          <h1 className="text-2xl font-[900] tracking-tight text-slate-900 sm:text-3xl">
-            Issue Digital Certificate
-          </h1>
-          <p className="text-xs text-slate-500 mt-1">
-            Anchor a tamper-proof credential to Ethereum with instant PDF generation and automated recipient dispatch.
-          </p>
+  const handleIssueAnother = () => {
+    setForm(EMPTY_FORM);
+    setErrors({});
+    setIssued(null);
+  };
+
+  /* ------------------------------------------------------------------ */
+  /* Confirmation                                                        */
+  /* ------------------------------------------------------------------ */
+  if (issued) {
+    const transaction = issued.transactions?.[0];
+
+    return (
+      <div className="space-y-6">
+        <PageHeader
+          breadcrumbs={[
+            { label: 'Registry', href: '/dashboard/certificates' },
+          ]}
+          title="Certificate issued"
+          description="The credential has been hashed, written to the ledger and sent to the recipient."
+          actions={
+            <>
+              <Button variant="outline" size="sm" onClick={handleIssueAnother}>
+                <RotateCcw aria-hidden />
+                Issue another
+              </Button>
+              <Button asChild size="sm">
+                <Link href={`/dashboard/certificates/${issued.id}`}>
+                  Open record
+                </Link>
+              </Button>
+            </>
+          }
+        />
+
+        <div className="flex items-start gap-3 rounded-xl border border-success-line bg-success-soft p-4">
+          <CheckCircle2
+            className="mt-0.5 h-5 w-5 shrink-0 text-success-fg"
+            aria-hidden
+          />
+          <div className="space-y-1">
+            <p className="text-sm font-semibold text-success-fg">
+              {issued.certificateId} is live and publicly verifiable
+            </p>
+            <p className="text-xs leading-relaxed text-success-fg/85">
+              {issued.emailSent === false
+                ? 'The certificate is on-chain, but the delivery email has not gone out yet. You can resend it from the record.'
+                : `A PDF and verification link were emailed to ${issued.recipientEmail}.`}
+            </p>
+          </div>
         </div>
 
-        {issuedCertificate && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleResetForm}
-            className="rounded-full border-slate-200 text-xs font-semibold"
-          >
-            <RotateCcw className="mr-1.5 h-3.5 w-3.5" />
-            Issue Another Certificate
-          </Button>
-        )}
-      </div>
+        <div className="grid gap-6 lg:grid-cols-12">
+          <div className="space-y-6 lg:col-span-7">
+            <Card>
+              <CardHeader>
+                <CardTitle>Proof of issuance</CardTitle>
+                <CardDescription>
+                  Keep these references for your audit trail
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-0">
+                <DataList className="rounded-none border-0">
+                  <DataRow
+                    label="Certificate ID"
+                    value={issued.certificateId}
+                    mono
+                    copyValue={issued.certificateId}
+                  />
+                  <DataRow
+                    label="Recipient"
+                    value={
+                      <>
+                        {issued.recipientName}
+                        <span className="block text-xs text-ink-muted">
+                          {issued.recipientEmail}
+                        </span>
+                      </>
+                    }
+                  />
+                  <DataRow
+                    label="Certificate hash (SHA-256)"
+                    value={issued.certificateHash}
+                    fallback="Not recorded"
+                    mono
+                    copyValue={issued.certificateHash}
+                  />
+                  <DataRow
+                    label="Transaction"
+                    mono
+                    copyValue={transaction?.txHash}
+                    value={
+                      transaction?.txHash ? (
+                        <a
+                          href={getEtherscanUrl(
+                            transaction.txHash,
+                            transaction.networkName || 'sepolia'
+                          )}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1 rounded-sm text-brand hover:underline"
+                        >
+                          {shortenHash(transaction.txHash, 10)}
+                          <ExternalLink className="h-3 w-3" aria-hidden />
+                        </a>
+                      ) : null
+                    }
+                    fallback="Awaiting confirmation"
+                  />
+                  <DataRow
+                    label="Block"
+                    value={transaction?.blockNumber ? `#${transaction.blockNumber}` : null}
+                    fallback="Pending"
+                    mono
+                  />
+                  <DataRow
+                    label="Valid until"
+                    value={issued.expiryDate ? formatDate(issued.expiryDate) : 'No expiry'}
+                  />
+                </DataList>
+              </CardContent>
+            </Card>
 
-      {/* Success State Screen */}
-      {issuedCertificate ? (
-        <div className="space-y-6 animate-in fade-in-50 duration-300">
-          <div className="rounded-3xl border border-emerald-200 bg-emerald-50/60 p-8 shadow-xs">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-emerald-600 text-white shadow-md">
-                  <CheckCircle2 className="h-6 w-6" />
-                </div>
-                <div>
-                  <Badge variant="outline" className="bg-emerald-100 text-emerald-800 border-emerald-300 font-mono text-xs">
-                    ON-CHAIN MINED & VERIFIED
-                  </Badge>
-                  <h2 className="text-xl font-[900] text-slate-900 mt-1">
-                    Certificate Successfully Issued!
-                  </h2>
-                  <p className="text-xs text-slate-600 mt-1">
-                    Cryptographic hash recorded on Ethereum Sepolia ledger. Vector PDF diploma generated.
-                  </p>
-                </div>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap gap-2.5">
+              <Button asChild>
                 <a
-                  href={`/api/certificates/${issuedCertificate.id}/pdf`}
+                  href={`/api/certificates/${issued.id}/pdf`}
                   target="_blank"
                   rel="noopener noreferrer"
                 >
-                  <Button className="rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-xs shadow-md">
-                    <Download className="mr-1.5 h-4 w-4" />
-                    Download Official PDF
-                  </Button>
+                  <Download aria-hidden />
+                  Download PDF
                 </a>
-
+              </Button>
+              <Button asChild variant="outline">
                 <Link
-                  href={`/verify/${encodeURIComponent(issuedCertificate.certificateId)}`}
+                  href={`/verify/${encodeURIComponent(issued.certificateId)}`}
                   target="_blank"
                 >
-                  <Button variant="outline" className="rounded-full border-slate-300 text-xs font-semibold bg-white">
-                    <ExternalLink className="mr-1.5 h-4 w-4" />
-                    Public Verification Page
-                  </Button>
+                  <ExternalLink aria-hidden />
+                  View public verification
                 </Link>
-              </div>
-            </div>
-
-            {/* Proof Metadata Strip */}
-            <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 pt-6 border-t border-emerald-200/80 font-mono text-xs">
-              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
-                <span className="text-slate-400 text-[11px] block">Certificate ID</span>
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-[#C8102E] text-sm">{issuedCertificate.certificateId}</span>
-                  <button onClick={() => handleCopy(issuedCertificate.certificateId, 'Certificate ID')} className="text-slate-400 hover:text-slate-600">
-                    <Copy className="h-3.5 w-3.5" />
-                  </button>
-                </div>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
-                <span className="text-slate-400 text-[11px] block">Recipient</span>
-                <span className="font-bold text-slate-800 block truncate">{issuedCertificate.recipientName}</span>
-                <span className="text-slate-500 text-[10px] truncate block">{issuedCertificate.recipientEmail}</span>
-              </div>
-
-              <div className="bg-white p-4 rounded-2xl border border-emerald-100 space-y-1">
-                <span className="text-slate-400 text-[11px] block">Transaction Hash</span>
-                <div className="flex items-center justify-between">
-                  <span className="text-slate-700 text-xs truncate max-w-[150px]">
-                    {issuedCertificate.transactions?.[0]?.txHash || 'Pending on node'}
-                  </span>
-                  {issuedCertificate.transactions?.[0]?.txHash && (
-                    <button onClick={() => handleCopy(issuedCertificate.transactions![0].txHash, 'Tx Hash')} className="text-slate-400 hover:text-slate-600">
-                      <Copy className="h-3.5 w-3.5" />
-                    </button>
-                  )}
-                </div>
-              </div>
+              </Button>
+              <Button asChild variant="outline">
+                <Link href={`/dashboard/certificates/${issued.id}`}>
+                  <Send aria-hidden />
+                  Manage delivery
+                </Link>
+              </Button>
             </div>
           </div>
+
+          <div className="lg:col-span-5">
+            <CertificateDocument
+              organizationName={orgName}
+              recipientName={issued.recipientName}
+              courseName={issued.courseName}
+              courseDescription={issued.courseDescription}
+              certificateId={issued.certificateId}
+              issueDate={issued.issueDate}
+              expiryDate={issued.expiryDate}
+              qrCodeData={issued.qrCodeData}
+              status="VALID"
+            />
+          </div>
         </div>
-      ) : (
-        /* Split Screen Studio: Form + Live Interactive Preview */
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
-          {/* Left Form: 7 Columns */}
-          <div className="lg:col-span-7">
-            <Card className="border-slate-200/90 bg-white shadow-xs rounded-3xl overflow-hidden">
-              <CardHeader className="bg-slate-50/70 border-b border-slate-100 pb-5">
-                <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-[#C8102E]">
-                  <Sparkles className="h-4 w-4" />
-                  <span>Credential Details</span>
-                </div>
-                <CardTitle className="text-lg font-[900] text-slate-900">
-                  Recipient & Program Specification
-                </CardTitle>
-                <CardDescription className="text-xs text-slate-500">
-                  Enter student information to compute the SHA-256 cryptographic seal.
+      </div>
+    );
+  }
+
+  /* ------------------------------------------------------------------ */
+  /* Issuance form                                                       */
+  /* ------------------------------------------------------------------ */
+  return (
+    <div className="space-y-6">
+      <PageHeader
+        breadcrumbs={[{ label: 'Registry', href: '/dashboard/certificates' }]}
+        title="Issue a certificate"
+        description="The details below are hashed together and written to the blockchain. They cannot be edited afterwards — only revoked and reissued."
+      />
+
+      <div className="grid gap-6 lg:grid-cols-12">
+        {/* ------------------------------------------------------------ */}
+        {/* Form                                                          */}
+        {/* ------------------------------------------------------------ */}
+        <div className="lg:col-span-7">
+          <form onSubmit={handleSubmit} noValidate className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Recipient</CardTitle>
+                <CardDescription>
+                  Who the credential is awarded to, and where it is delivered
                 </CardDescription>
               </CardHeader>
+              <CardContent className="space-y-5">
+                <Field
+                  htmlFor="recipientName"
+                  label="Full name"
+                  required
+                  error={errors.recipientName}
+                  hint="Printed on the certificate exactly as entered."
+                >
+                  <Input
+                    id="recipientName"
+                    name="recipientName"
+                    autoComplete="off"
+                    placeholder="Eleanor Vance"
+                    leading={<User />}
+                    value={form.recipientName}
+                    invalid={Boolean(errors.recipientName)}
+                    onChange={(e) => setValue('recipientName', e.target.value)}
+                  />
+                </Field>
 
-              <CardContent className="pt-6">
-                <form onSubmit={handleSubmit} className="space-y-5">
-                  {/* Recipient Name */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipientName" className="text-xs font-bold text-slate-700">
-                      Recipient Full Name <span className="text-rose-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <User className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <Input
-                        id="recipientName"
-                        name="recipientName"
-                        placeholder="e.g. Dr. Alex Rivera or Eleanor Vance"
-                        value={formData.recipientName}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Recipient Email */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="recipientEmail" className="text-xs font-bold text-slate-700">
-                      Recipient Email Address <span className="text-rose-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <Input
-                        id="recipientEmail"
-                        name="recipientEmail"
-                        type="email"
-                        placeholder="e.g. student@oxford.edu"
-                        value={formData.recipientEmail}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                      />
-                    </div>
-                    <p className="text-[11px] text-slate-400">
-                      The official PDF certificate will be delivered to this email automatically upon mining.
-                    </p>
-                  </div>
-
-                  {/* Course Name */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="courseName" className="text-xs font-bold text-slate-700">
-                      Program / Degree / Certification Title <span className="text-rose-500">*</span>
-                    </Label>
-                    <div className="relative">
-                      <BookOpen className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <Input
-                        id="courseName"
-                        name="courseName"
-                        placeholder="e.g. Master of Science in Quantum Computing & AI"
-                        value={formData.courseName}
-                        onChange={handleInputChange}
-                        required
-                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Course Description */}
-                  <div className="space-y-1.5">
-                    <Label htmlFor="courseDescription" className="text-xs font-bold text-slate-700">
-                      Program Description & Honors <span className="text-slate-400 font-normal">(Optional)</span>
-                    </Label>
-                    <Textarea
-                      id="courseDescription"
-                      name="courseDescription"
-                      placeholder="e.g. Awarded with Distinction for exceptional research in decentralized cryptography..."
-                      value={formData.courseDescription}
-                      onChange={handleInputChange}
-                      rows={3}
-                      className="rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                    />
-                  </div>
-
-                  {/* Expiration Date & Presets */}
-                  <div className="space-y-2 pt-1">
-                    <div className="flex items-center justify-between">
-                      <Label htmlFor="expiryDate" className="text-xs font-bold text-slate-700">
-                        Validity / Expiration Date <span className="text-slate-400 font-normal">(Leave blank for Lifetime)</span>
-                      </Label>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-2 pb-1">
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(null)}
-                        className={`px-3 py-1 rounded-full text-[11px] font-bold border transition ${
-                          formData.expiryDate === ''
-                            ? 'bg-[#C8102E] text-white border-[#C8102E]'
-                            : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
-                        }`}
-                      >
-                        Lifetime (No Expiry)
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(12)}
-                        className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition"
-                      >
-                        +1 Year
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleSetPresetExpiry(24)}
-                        className="px-3 py-1 rounded-full text-[11px] font-bold bg-slate-50 text-slate-600 border border-slate-200 hover:bg-slate-100 transition"
-                      >
-                        +2 Years
-                      </button>
-                    </div>
-
-                    <div className="relative">
-                      <Calendar className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                      <Input
-                        id="expiryDate"
-                        name="expiryDate"
-                        type="date"
-                        value={formData.expiryDate}
-                        onChange={handleInputChange}
-                        className="pl-10 h-11 rounded-xl border-slate-200 text-xs focus:border-[#C8102E]"
-                      />
-                    </div>
-                  </div>
-
-                  {/* Submit Button */}
-                  <div className="pt-3">
-                    <Button
-                      type="submit"
-                      disabled={isLoading}
-                      className="w-full h-12 rounded-full bg-[#C8102E] hover:bg-[#9E1B32] text-white font-bold text-sm shadow-md shadow-[#C8102E]/25 transition hover:scale-[1.01] active:scale-95"
-                    >
-                      {isLoading ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Broadcasting Transaction to Sepolia Blockchain...
-                        </>
-                      ) : (
-                        <>
-                          <ShieldCheck className="mr-2 h-4 w-4" />
-                          Anchor & Issue Certificate
-                        </>
-                      )}
-                    </Button>
-                  </div>
-                </form>
+                <Field
+                  htmlFor="recipientEmail"
+                  label="Email address"
+                  required
+                  error={errors.recipientEmail}
+                  hint="The PDF and verification link are sent here as soon as the transaction confirms."
+                >
+                  <Input
+                    id="recipientEmail"
+                    name="recipientEmail"
+                    type="email"
+                    autoComplete="off"
+                    placeholder="e.vance@university.edu"
+                    leading={<Mail />}
+                    value={form.recipientEmail}
+                    invalid={Boolean(errors.recipientEmail)}
+                    onChange={(e) => setValue('recipientEmail', e.target.value)}
+                  />
+                </Field>
               </CardContent>
             </Card>
-          </div>
 
-          {/* Right Live Preview: 5 Columns */}
-          <div className="lg:col-span-5 space-y-4 sticky top-28">
-            <div className="flex items-center justify-between px-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                <Eye className="h-3.5 w-3.5 text-[#C8102E]" />
-                Live Diploma Preview
-              </span>
-              <span className="text-[11px] font-mono text-emerald-600 font-bold bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
-                A4 Vector Sharp
+            <Card>
+              <CardHeader>
+                <CardTitle>Award</CardTitle>
+                <CardDescription>
+                  What the credential certifies
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-5">
+                <Field
+                  htmlFor="courseName"
+                  label="Programme or qualification"
+                  required
+                  error={errors.courseName}
+                >
+                  <Input
+                    id="courseName"
+                    name="courseName"
+                    placeholder="MSc Computer Science"
+                    leading={<BookOpen />}
+                    value={form.courseName}
+                    invalid={Boolean(errors.courseName)}
+                    onChange={(e) => setValue('courseName', e.target.value)}
+                  />
+                </Field>
+
+                <Field
+                  htmlFor="courseDescription"
+                  label="Description or honours"
+                  hint="Optional. Appears beneath the award title on the certificate."
+                >
+                  <Textarea
+                    id="courseDescription"
+                    name="courseDescription"
+                    rows={3}
+                    maxLength={280}
+                    placeholder="Awarded with Distinction for research in applied cryptography."
+                    value={form.courseDescription}
+                    onChange={(e) => setValue('courseDescription', e.target.value)}
+                  />
+                </Field>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Validity</CardTitle>
+                <CardDescription>
+                  How long the credential remains active
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="flex flex-wrap gap-2">
+                  {EXPIRY_PRESETS.map((preset) => {
+                    const selected =
+                      preset.months === null
+                        ? form.expiryDate === ''
+                        : form.expiryDate === presetDate(preset.months);
+                    return (
+                      <button
+                        key={preset.label}
+                        type="button"
+                        onClick={() => applyExpiryPreset(preset.months)}
+                        aria-pressed={selected}
+                        className={cn(
+                          'rounded-md border px-3 py-1.5 text-xs font-medium transition-colors',
+                          selected
+                            ? 'border-brand bg-brand-soft text-brand-strong'
+                            : 'border-line-strong bg-surface text-ink-secondary hover:bg-surface-muted'
+                        )}
+                      >
+                        {preset.label}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <Field
+                  htmlFor="expiryDate"
+                  label="Expiry date"
+                  error={errors.expiryDate}
+                  hint="Leave empty for a credential that never expires, such as a degree."
+                >
+                  <Input
+                    id="expiryDate"
+                    name="expiryDate"
+                    type="date"
+                    min={today}
+                    value={form.expiryDate}
+                    invalid={Boolean(errors.expiryDate)}
+                    onChange={(e) => setValue('expiryDate', e.target.value)}
+                  />
+                </Field>
+              </CardContent>
+            </Card>
+
+            <div className="flex flex-col-reverse gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <p className="flex items-start gap-2 text-xs leading-relaxed text-ink-muted">
+                <Info className="mt-px h-3.5 w-3.5 shrink-0" aria-hidden />
+                Issuing writes a transaction to Ethereum Sepolia. This can take a
+                few seconds to confirm.
+              </p>
+              <Button type="submit" size="lg" loading={isSubmitting} className="sm:w-auto">
+                {isSubmitting ? (
+                  'Issuing certificate…'
+                ) : (
+                  <>
+                    <ShieldCheck aria-hidden />
+                    Issue certificate
+                  </>
+                )}
+              </Button>
+            </div>
+          </form>
+        </div>
+
+        {/* ------------------------------------------------------------ */}
+        {/* Live preview                                                  */}
+        {/* ------------------------------------------------------------ */}
+        <div className="lg:col-span-5">
+          <div className="lg:sticky lg:top-24">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="eyebrow">Live preview</h2>
+              <span className="text-2xs text-ink-subtle">
+                Updates as you type
               </span>
             </div>
 
-            {/* Real-time Simulated Diploma Card */}
-            <div className="rounded-3xl border-2 border-[#9E1B32] bg-white p-7 shadow-xl space-y-6 relative overflow-hidden">
-              {/* Inner gold decorative border */}
-              <div className="absolute inset-2 border border-[#CA8A04]/40 rounded-2xl pointer-events-none" />
+            <CertificateDocument
+              organizationName={orgName}
+              recipientName={form.recipientName}
+              courseName={form.courseName}
+              courseDescription={form.courseDescription || null}
+              expiryDate={form.expiryDate || null}
+              placeholder
+              status="VALID"
+            />
 
-              {/* Institution Header */}
-              <div className="text-center space-y-1.5 pt-2">
-                <div className="flex justify-center">
-                  <CitadelLogo className="h-10 w-10" size={48} />
-                </div>
-                <h4 className="text-xs font-[900] tracking-wider uppercase text-slate-800">
-                  {orgName}
-                </h4>
-                <p className="text-[9px] uppercase tracking-widest text-[#9E1B32] font-bold">
-                  Official Blockchain-Verified Credential
-                </p>
-              </div>
-
-              {/* Student Name */}
-              <div className="text-center py-2 space-y-1">
-                <p className="text-[10px] text-slate-400 uppercase tracking-widest">This is to certify that</p>
-                <h3 className="text-lg font-[900] text-slate-900 tracking-tight font-serif min-h-[28px]">
-                  {formData.recipientName.trim() || 'Graduate Student Name'}
-                </h3>
-                <p className="text-[10px] text-slate-500">has successfully fulfilled all requirements for</p>
-                <p className="text-xs font-bold text-[#C8102E] leading-snug min-h-[18px]">
-                  {formData.courseName.trim() || 'Degree / Certification Title'}
-                </p>
-              </div>
-
-              {/* Description Snippet */}
-              {formData.courseDescription && (
-                <p className="text-[10px] text-slate-500 text-center italic line-clamp-2 px-4">
-                  &ldquo;{formData.courseDescription}&rdquo;
-                </p>
-              )}
-
-              {/* Footer proof bar */}
-              <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-[10px] font-mono text-slate-500">
-                <div className="space-y-0.5">
-                  <span className="block text-[9px] text-slate-400">Issue Date:</span>
-                  <span className="font-bold text-slate-700">{new Date().toISOString().split('T')[0]}</span>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <QrCode className="h-6 w-6 text-slate-700" />
-                  <div className="text-right">
-                    <span className="block text-[9px] text-slate-400">Validity:</span>
-                    <span className="font-bold text-emerald-600">
-                      {formData.expiryDate ? formData.expiryDate : 'Lifetime'}
-                    </span>
-                  </div>
-                </div>
-              </div>
-            </div>
+            <p className="mt-3 text-xs leading-relaxed text-ink-muted">
+              The delivered PDF follows this layout at A4, with the verification
+              QR code generated once the certificate is anchored on-chain.
+            </p>
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
+}
+
+/** Same arithmetic as `applyExpiryPreset`, used to mark the active preset. */
+function presetDate(months: number): string {
+  const date = new Date();
+  date.setMonth(date.getMonth() + months);
+  return date.toISOString().slice(0, 10);
 }
