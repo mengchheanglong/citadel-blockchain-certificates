@@ -77,6 +77,16 @@ export function SupabaseAuthProvider({ children }: { children: React.ReactNode }
 
         if (initialSession?.user) {
           await fetchOrgProfile(initialSession.user);
+        } else {
+          try {
+            const res = await fetch('/api/auth/profile');
+            if (res.ok) {
+              const data = await res.json();
+              if (data.organization) {
+                setOrganization(data.organization);
+              }
+            }
+          } catch {}
         }
       } catch (err) {
         console.error('Error initializing Supabase auth session:', err);

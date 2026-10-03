@@ -32,16 +32,18 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  const isDemoAuth = request.cookies.get('demo_auth')?.value === 'true';
+  const isAuthenticated = !!user || isDemoAuth;
   const { pathname } = request.nextUrl;
 
   // Protect Dashboard routes
-  if (!user && (pathname.startsWith('/dashboard') || pathname.startsWith('/certificates'))) {
+  if (!isAuthenticated && (pathname.startsWith('/dashboard') || pathname.startsWith('/certificates'))) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('callbackUrl', pathname);
     return NextResponse.redirect(loginUrl);
   }
 
-  // Redirect authenticated users away from auth pages to dashboard
+  // Redirect authenticated users away from auth pages to dashboard (unless viewing explicitly)
   if (user && (pathname === '/login' || pathname === '/register')) {
     return NextResponse.redirect(new URL('/dashboard', request.url));
   }

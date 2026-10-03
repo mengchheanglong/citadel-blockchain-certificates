@@ -48,6 +48,42 @@ def add_callout(doc, text, title=None):
     
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
+def add_figure(doc, img_path, caption_title, caption_text, width_inches=6.2):
+    MUTED_COLOR = RGBColor(100, 116, 139)
+    DARK_GRAY = RGBColor(30, 41, 59)
+    
+    if os.path.exists(img_path):
+        p_img = doc.add_paragraph()
+        p_img.paragraph_format.space_before = Pt(6)
+        p_img.paragraph_format.space_after = Pt(4)
+        run_img = p_img.add_run()
+        run_img.add_picture(img_path, width=Inches(width_inches))
+        
+        cap_p = doc.add_paragraph()
+        cap_p.paragraph_format.space_before = Pt(2)
+        cap_p.paragraph_format.space_after = Pt(14)
+        
+        r_title = cap_p.add_run(f"{caption_title}: ")
+        r_title.bold = True
+        r_title.font.name = "Calibri"
+        r_title.font.size = Pt(9.5)
+        r_title.font.color.rgb = DARK_GRAY
+        
+        r_cap = cap_p.add_run(caption_text)
+        r_cap.font.name = "Calibri"
+        r_cap.font.size = Pt(9.5)
+        r_cap.font.italic = True
+        r_cap.font.color.rgb = MUTED_COLOR
+    else:
+        p = doc.add_paragraph()
+        p.paragraph_format.space_before = Pt(4)
+        p.paragraph_format.space_after = Pt(8)
+        r = p.add_run(f"[{caption_title} - Graphic image pending: {os.path.basename(img_path)}]")
+        r.font.name = "Calibri"
+        r.font.size = Pt(10)
+        r.font.italic = True
+        r.font.color.rgb = RGBColor(220, 38, 38)
+
 def build_document():
     doc = Document()
     
@@ -65,6 +101,9 @@ def build_document():
     BODY_COLOR = RGBColor(51, 65, 85)
     MUTED_COLOR = RGBColor(100, 116, 139)
     
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    screenshots_dir = os.path.join(base_dir, "..", "docs", "screenshots")
+
     # ----------------------------------------------------
     # TITLE & HEADER
     # ----------------------------------------------------
@@ -130,10 +169,10 @@ def build_document():
 
     doc.add_paragraph().paragraph_format.space_after = Pt(12)
 
-    # Helper for headings
+    # Helpers
     def add_section_heading(num_str, title_str):
         h = doc.add_paragraph()
-        h.paragraph_format.space_before = Pt(16)
+        h.paragraph_format.space_before = Pt(18)
         h.paragraph_format.space_after = Pt(6)
         r_num = h.add_run(f"{num_str}. ")
         r_num.bold = True
@@ -149,7 +188,7 @@ def build_document():
 
     def add_subheading(sub_str):
         h = doc.add_paragraph()
-        h.paragraph_format.space_before = Pt(10)
+        h.paragraph_format.space_before = Pt(12)
         h.paragraph_format.space_after = Pt(4)
         r = h.add_run(sub_str)
         r.bold = True
@@ -215,6 +254,14 @@ def build_document():
     add_bullet(" Managed via Prisma ORM on Supabase PostgreSQL. Stores human-readable information (student names, program descriptions, organization profiles) securely off-chain.", "3. Persistence Layer (Database):")
     add_bullet(" Solidity smart contract (CertificateRegistry.sol) deployed on Ethereum EVM (Sepolia Testnet / Hardhat). Records only the 32-byte certificate ID hash, data hash, and expiration timestamp.", "4. Decentralized Ledger Layer (Blockchain):")
 
+    # Embed Actual Architecture Diagram Graphic
+    add_figure(
+        doc,
+        os.path.join(screenshots_dir, "diagram_architecture.png"),
+        "Figure 2.1",
+        "Citadel Four-Tier Architectural Model (Presentation, Application API, Off-Chain PostgreSQL Database, and EVM Blockchain Ledger)"
+    )
+
     add_callout(doc, "Architecture Flow: Web Browser (Next.js 14) -> API Routes (Zod Validation) -> PostgreSQL (Prisma ORM) & Ethereum EVM (Solidity Smart Contract via Ethers.js v6)", "Four-Tier Architecture Summary")
 
     # ----------------------------------------------------
@@ -234,12 +281,28 @@ def build_document():
     add_bullet(" The server calls verifyCertificate on the smart contract. The contract checks if the ID exists, verifies that the hash matches the on-chain record, and evaluates block.timestamp against expirationDate.", "Step 3 (On-Chain Verification):")
     add_bullet(" The user sees an official cryptographic proof card showing Valid (Green), Expired (Yellow), or Revoked (Red) with full transaction hash links.", "Step 4 (Result Display):")
 
+    # Embed Actual User Flow Diagram Graphic
+    add_figure(
+        doc,
+        os.path.join(screenshots_dir, "diagram_user_flow.png"),
+        "Figure 3.1",
+        "Citadel End-to-End System & User Flows (Left: Organization Issuance Studio Pipeline; Right: Public Verification Lifecycle)"
+    )
+
     # ----------------------------------------------------
     # SECTION 4: DATABASE DESIGN (ER DIAGRAM)
     # ----------------------------------------------------
     add_section_heading("4", "Database Design (ER Diagram)")
     add_body("The database consists of three primary entities organized in relational structure:")
     
+    # Embed Actual ER Diagram Graphic
+    add_figure(
+        doc,
+        os.path.join(screenshots_dir, "diagram_er.png"),
+        "Figure 4.1",
+        "Citadel Relational Entity-Relationship Model (Prisma ORM PostgreSQL Schema with Primary, Foreign, and Unique Keys)"
+    )
+
     db_table = doc.add_table(rows=4, cols=3)
     db_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     db_table.autofit = False
@@ -258,7 +321,7 @@ def build_document():
     db_rows = [
         ("Organization", "id (UUID), name, email, website, description, createdAt", "Stores verified institution profile & issuer credentials."),
         ("Certificate", "id (UUID), certificateId (UK), recipientName, recipientEmail, courseName, issueDate, expiryDate, status, certHash, organizationId (FK)", "Stores academic records, recipient details, and canonical SHA-256 hash."),
-        ("BlockchainTransaction", "id (UUID), certificateId (FK), txHash, blockNumber, networkName, contractAddress, action, status, createdAt", "Maintains an immutable audit log of Ethereum on-chain transactions."),
+        ("BlockchainTransaction", "id (UUID), certificateId (FK), txHash (UK), blockNumber, networkName, contractAddress, action, timestamp, confirmed", "Maintains an immutable audit log of Ethereum on-chain transactions."),
     ]
     
     widths = [Inches(1.8), Inches(2.7), Inches(2.0)]
@@ -301,6 +364,14 @@ def build_document():
     add_section_heading("6", "Smart Contract Design")
     add_body("The CertificateRegistry.sol smart contract is written in Solidity 0.8.24 and deployed on Ethereum EVM:")
     
+    # Embed Actual Smart Contract Diagram Graphic
+    add_figure(
+        doc,
+        os.path.join(screenshots_dir, "diagram_smart_contract.png"),
+        "Figure 6.1",
+        "CertificateRegistry.sol Smart Contract Architecture: State Machine Lifecycle, Modifiers, and Cryptographic Invariance"
+    )
+
     add_subheading("6.1 Contract State Enumeration")
     add_bullet(" Authentic, verified on-chain, and validity timestamp is unexpired.", "Valid (Status 1):")
     add_bullet(" Authentic when issued, but designated validity window has elapsed.", "Expired (Status 2):")
@@ -317,36 +388,23 @@ def build_document():
     # SECTION 7: USER INTERFACE DESIGN & SCREENSHOTS
     # ----------------------------------------------------
     add_section_heading("7", "User Interface Design & Screenshots")
-    add_body("Below are the high-resolution screenshots captured from the live running Citadel application:")
+    add_body("Below are the high-resolution screenshots captured directly from the live running Citadel application, showing fully loaded data tables, metrics, and zero skeleton placeholders:")
 
     screenshots = [
-        ("Figure 1: Marketing Landing Page (/)", "01_landing_page.png", "Deep obsidian background (#000000) with Burgundy Red (#C8102E) highlights, value proposition, protocol metrics, and instant verification search bar."),
-        ("Figure 2: Organization Authentication (/login)", "02_login_page.png", "Clean institution login interface featuring Citadel Burgundy Red buttons, input focus rings, and route guards."),
-        ("Figure 3: Executive Organization Dashboard (/dashboard)", "04_dashboard_overview.png", "Executive welcome banner, 4 live stat cards (Total Issued, Active Valid, Expired, Revoked), quick action strip, and recent credentials table."),
-        ("Figure 4: Split-Screen Certificate Issuing Studio (/dashboard/certificates/new)", "05_issue_studio_live_preview.png", "Interactive split-screen interface: Left side contains the issuance form; Right side renders the live vector diploma preview canvas updating in real time."),
-        ("Figure 5: Certificate Registry & Audit CSV Export (/dashboard/certificates)", "06_certificate_registry.png", "Complete credential registry with filter tabs (All, Valid, Expired, Revoked), search input, and client-side CSV spreadsheet export."),
-        ("Figure 6: Public Verification Portal (/verify)", "07_public_verify_portal.png", "Public verification engine supporting Certificate ID lookup and camera QR code scanning."),
-        ("Figure 7: Cryptographic Proof & Verification Result (/verify/[id])", "08_verification_result_valid.png", "Verified credential view showing authentic status badge, recipient metadata, and Ethereum blockchain proof card (Tx Hash, Block Number, Contract Address)."),
+        ("Figure 7.1: Marketing Landing Page (/)", "01_landing_page.png", "Deep obsidian background (#000000) with Burgundy Red (#C8102E) highlights, value proposition, protocol metrics, and instant verification search bar."),
+        ("Figure 7.2: Organization Authentication (/login)", "02_login_page.png", "Clean institution login interface featuring Citadel Burgundy Red buttons, input focus rings, and route guards (zero errors)."),
+        ("Figure 7.3: Institutional Registration (/register)", "03_register_page.png", "Institution onboarding portal for registering accredited issuing bodies with secure cryptographic access."),
+        ("Figure 7.4: Executive Organization Dashboard (/dashboard)", "04_dashboard_overview.png", "Executive welcome banner, 4 live stat cards (Total Issued, Active Valid, Expired, Revoked), issuance trend graph, and fully populated recent credentials ledger."),
+        ("Figure 7.5: Split-Screen Certificate Issuing Studio (/dashboard/certificates/new)", "05_issue_studio_live_preview.png", "Interactive split-screen interface: Left side contains the issuance form; Right side renders the live vector diploma preview canvas updating in real time."),
+        ("Figure 7.6: Certificate Registry & Audit CSV Export (/dashboard/certificates)", "06_certificate_registry.png", "Complete credential registry with filter tabs (All, Valid, Expired, Revoked), recipient avatars, status pills, and client-side CSV spreadsheet export."),
+        ("Figure 7.7: Public Verification Portal (/verify)", "07_public_verify_portal.png", "Public verification engine supporting Certificate ID lookup and camera QR code scanning."),
+        ("Figure 7.8: Cryptographic Proof & Verification Result — Genuine & Valid (/verify/[id])", "08_verification_result_valid.png", "Verified credential view showing authentic green status badge, recipient metadata, and Ethereum blockchain proof card (Tx Hash, Block Number, Contract Address)."),
+        ("Figure 7.9: Cryptographic Proof & Verification Result — Revoked Credential (/verify/[id])", "09_verification_result_revoked.png", "Public view of an invalidated certificate showing prominent red revocation alert, timestamp, issuer recorded reason, and watermarked diploma."),
     ]
 
-    base_dir = os.path.dirname(os.path.abspath(__file__))
-    screenshots_dir = os.path.join(base_dir, "..", "docs", "screenshots")
-
     for title, filename, caption in screenshots:
-        add_subheading(title)
         img_path = os.path.join(screenshots_dir, filename)
-        if os.path.exists(img_path):
-            doc.add_picture(img_path, width=Inches(6.2))
-            cap_p = doc.add_paragraph()
-            cap_p.paragraph_format.space_before = Pt(3)
-            cap_p.paragraph_format.space_after = Pt(12)
-            r_cap = cap_p.add_run(caption)
-            r_cap.font.name = "Calibri"
-            r_cap.font.size = Pt(9.5)
-            r_cap.font.italic = True
-            r_cap.font.color.rgb = MUTED_COLOR
-        else:
-            add_body(f"[Screenshot {filename} will be embedded here]")
+        add_figure(doc, img_path, title, caption, width_inches=6.2)
 
     # ----------------------------------------------------
     # SECTION 8: IMPLEMENTATION SUMMARY & TESTING
@@ -371,7 +429,7 @@ def build_document():
     # ----------------------------------------------------
     add_section_heading("9", "Public GitHub Repository")
     add_body("The complete project codebase, smart contract source, database migrations, and test scripts are publicly available on GitHub:")
-    add_callout(doc, "Public Repository URL:\nhttps://github.com/mengchheanglong/citadel-blockchain-certificates\n\nBranch: main\nStatus: Up to date with all 52 tests, contracts, and documentation.", "GitHub Repository")
+    add_callout(doc, "Public Repository URL:\nhttps://github.com/mengchheanglong/citadel-blockchain-certificates\n\nBranch: main\nStatus: Up to date with all 52 tests, contracts, diagrams, and documentation.", "GitHub Repository")
 
     # ----------------------------------------------------
     # SECTION 10: INDIVIDUAL CONTRIBUTION REPORT
