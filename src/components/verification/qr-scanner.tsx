@@ -2,6 +2,7 @@
 
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { Html5Qrcode } from 'html5-qrcode';
+import jsQR from 'jsqr';
 import {
   Camera,
   Upload,
@@ -11,7 +12,7 @@ import {
   X,
   FlipHorizontal,
   Loader2,
-  FileImage,
+  FileText,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
@@ -44,6 +45,101 @@ export function parseCertificateId(raw: string): string {
   }
 
   return decodeURIComponent(value).trim();
+}
+
+/**
+ * Decodes QR code from a canvas element using jsQR.
+ */
+function decodeCanvas(canvas: HTMLCanvasElement): string | null {
+  const ctx = canvas.getContext('2d', { willReadFrequently: true });
+  if (!ctx) return null;
+  const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const code = jsQR(imgData.data, canvas.width, canvas.height, {
+    inversionAttempts: 'attemptBoth',
+  });
+  return code ? code.data : null;
+}
+
+/**
+ * Multi-pass image scanner using jsQR to handle full-page certificates,
+ * small crops, and various quadrants.
+ */
+function scanImageWithJsQR(img: HTMLImageElement): string | null {
+  const w = img.naturalWidth || img.width;
+  const h = img.naturalHeight || img.height;
+
+  // Pass 1: Full native image
+  const fullCanvas = document.createElement('canvas');
+  fullCanvas.width = w;
+  fullCanvas.height = h;
+  const fullCtx = fullCanvas.getContext('2d', { willReadFrequently: true });
+  if (fullCtx) {
+    fullCtx.drawImage(img, 0, 0);
+    const res = decodeCanvas(fullCanvas);
+    if (res) return res;
+  }
+
+  // Pass 2: Upscaled (if small crop snippet like 65x65)
+  if (w < 220 || h < 220) {
+    const upCanvas = document.createElement('canvas');
+    const scale = Math.max(2, Math.floor(320 / Math.max(w, h)));
+    upCanvas.width = w * scale;
+    upCanvas.height = h * scale;
+    const upCtx = upCanvas.getContext('2d', { willReadFrequently: true });
+    if (upCtx) {
+      upCtx.imageSmoothingEnabled = false;
+      upCtx.drawImage(img, 0, 0, w * scale, h * scale);
+      const res = decodeCanvas(upCanvas);
+      if (res) return res;
+    }
+  }
+
+  // Pass 3: Bottom-right quadrant (Citadel certificate standard QR location)
+  const cropW = Math.floor(w * 0.45);
+  const cropH = Math.floor(h * 0.45);
+  const brCanvas = document.createElement('canvas');
+  brCanvas.width = cropW;
+  brCanvas.height = cropH;
+  const brCtx = brCanvas.getContext('2d', { willReadFrequently: true });
+  if (brCtx) {
+    brCtx.drawImage(img, w - cropW, h - cropH, cropW, cropH, 0, 0, cropW, cropH);
+    const res = decodeCanvas(brCanvas);
+    if (res) return res;
+  }
+
+  // Pass 4: Bottom-left quadrant
+  const blCanvas = document.createElement('canvas');
+  blCanvas.width = cropW;
+  blCanvas.height = cropH;
+  const blCtx = blCanvas.getContext('2d', { willReadFrequently: true });
+  if (blCtx) {
+    blCtx.drawImage(img, 0, h - cropH, cropW, cropH, 0, 0, cropW, cropH);
+    const res = decodeCanvas(blCanvas);
+    if (res) return res;
+  }
+
+  // Pass 5: Center region
+  const centerCanvas = document.createElement('canvas');
+  centerCanvas.width = cropW;
+  centerCanvas.height = cropH;
+  const centerCtx = centerCanvas.getContext('2d', { willReadFrequently: true });
+  if (centerCtx) {
+    centerCtx.drawImage(
+      img,
+      Math.floor((w - cropW) / 2),
+      Math.floor((h - cropH) / 2),
+      cropW,
+      cropH,
+      0,
+      0,
+      cropW,
+      cropH
+    );
+    const res = decodeCanvas(centerCanvas);
+    if (res) return res;
+  }
+
+  return null;
 }
 
 export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps) {
@@ -84,13 +180,13 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
   }, []);
 
   /**
-   * Callback fired when a QR code payload is detected and parsed.
+   * Callback fired when a QR code payload or Certificate ID is detected.
    */
   const handleDecodedText = useCallback(
     async (decodedText: string) => {
       const id = parseCertificateId(decodedText);
       if (!id) {
-        setFileError('The QR code was read, but does not contain a valid certificate ID.');
+        setFileError('The document was read, but does not contain a valid certificate ID.');
         return;
       }
 
@@ -154,19 +250,15 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
           aspectRatio: 1.0,
         };
 
-        // If targetCameraIndex is specified and devices are known, use device ID
         const idx = targetCameraIndex ?? selectedCameraIndex;
         if (availableDevices.length > 0 && availableDevices[idx]) {
           await scanner.start(
             availableDevices[idx].id,
             cameraConfig,
             (decodedText) => handleDecodedText(decodedText),
-            () => {
-              /* Scan frame misses are expected continuously */
-            }
+            () => {}
           );
         } else {
-          // Attempt facingMode environment first (ideal for mobile/tablets), fallback to user/default
           try {
             await scanner.start(
               { facingMode: 'environment' },
@@ -175,7 +267,7 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
               () => {}
             );
           } catch (envError) {
-            console.info('Environment facing camera failed, falling back to default camera:', envError);
+            console.info('Environment facing camera failed, falling back to user camera:', envError);
             await scanner.start(
               { facingMode: 'user' },
               cameraConfig,
@@ -187,7 +279,6 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
 
         setCameraState('running');
 
-        // Refresh camera list in case permission just revealed names
         try {
           const updatedDevices = await Html5Qrcode.getCameras();
           if (updatedDevices && updatedDevices.length > 0) {
@@ -212,13 +303,13 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
           );
         } else if (/notfound|device|no camera/i.test(message)) {
           setCameraError(
-            'No camera device detected on this system. You can upload an image of the QR code instead.'
+            'No camera device detected on this system. You can upload a certificate image or PDF instead.'
           );
         } else if (/insecure|secure context/i.test(message)) {
           setCameraError('Camera access requires an HTTPS connection or localhost.');
         } else {
           setCameraError(
-            'Unable to start the camera feed. Please check permissions or upload a QR image.'
+            'Unable to start the camera feed. Please check permissions or upload a certificate file.'
           );
         }
       }
@@ -249,36 +340,127 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
   };
 
   /**
-   * Process an image file to find a QR code using an off-screen instance.
+   * Processes an uploaded certificate file (PDF, PNG, JPG, WEBP).
    */
-  const processImageFile = async (file: File) => {
+  const processUploadedFile = async (file: File) => {
     if (!file) return;
 
-    if (!file.type.startsWith('image/')) {
-      setFileError('Please select a valid image file (.png, .jpg, .jpeg, .webp).');
+    const fileName = file.name.toLowerCase();
+    const isPdf = file.type === 'application/pdf' || fileName.endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || /\.(png|jpe?g|webp|bmp|gif)$/i.test(fileName);
+
+    if (!isPdf && !isImage) {
+      setFileError('Please select a certificate PDF or image file (.pdf, .png, .jpg, .webp).');
       return;
     }
 
     setIsFileDecoding(true);
     setFileError(null);
 
-    try {
-      const processorElement = document.getElementById('qr-file-processor');
-      if (!processorElement) {
-        throw new Error('Image processor container not found.');
+    // 1. Handle PDF Files
+    if (isPdf) {
+      try {
+        // Fast client pass: scan raw buffer for Certificate ID
+        const arrayBuffer = await file.arrayBuffer();
+        const latin1 = new TextDecoder('latin1').decode(arrayBuffer);
+        const match =
+          latin1.match(/CERT-\d{4}-[A-Za-z0-9]+/i) ||
+          latin1.match(/\/verify\/([A-Za-z0-9_-]+)/i);
+
+        if (match) {
+          await handleDecodedText(match[1] || match[0]);
+          return;
+        }
+
+        // Server pass: handles compressed streams and PDF decompression
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/verify/scan-file', {
+          method: 'POST',
+          body: formData,
+        });
+
+        const data = await response.json();
+        if (data.success && data.certificateId) {
+          await handleDecodedText(data.certificateId);
+          return;
+        } else if (data.error) {
+          setFileError(data.error);
+          return;
+        }
+      } catch (err) {
+        console.warn('PDF scan failure:', err);
       }
 
-      const fileScanner = new Html5Qrcode('qr-file-processor', false);
-      try {
-        const decodedText = await fileScanner.scanFile(file, false);
+      setFileError(
+        'No certificate ID or QR code could be detected in this PDF. Please verify the document or enter the ID manually.'
+      );
+      setIsFileDecoding(false);
+      return;
+    }
+
+    // 2. Handle Image Files with multi-pass jsQR scanner
+    try {
+      const objectUrl = URL.createObjectURL(file);
+      const img = new Image();
+
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error('Failed to load image.'));
+        img.src = objectUrl;
+      });
+
+      const decodedText = scanImageWithJsQR(img);
+      URL.revokeObjectURL(objectUrl);
+
+      if (decodedText) {
         await handleDecodedText(decodedText);
-      } finally {
-        fileScanner.clear();
+        return;
       }
-    } catch (err) {
-      console.warn('QR decode failed for uploaded file:', err);
+
+      // Secondary fallback: Html5Qrcode file scan
+      try {
+        const processorElement = document.getElementById('qr-file-processor');
+        if (processorElement) {
+          const fileScanner = new Html5Qrcode('qr-file-processor', false);
+          try {
+            const fallbackText = await fileScanner.scanFile(file, false);
+            if (fallbackText) {
+              await handleDecodedText(fallbackText);
+              return;
+            }
+          } finally {
+            fileScanner.clear();
+          }
+        }
+      } catch {
+        // Continue to server fallback
+      }
+
+      // Tertiary fallback: Server file parser
+      try {
+        const formData = new FormData();
+        formData.append('file', file);
+        const response = await fetch('/api/verify/scan-file', {
+          method: 'POST',
+          body: formData,
+        });
+        const data = await response.json();
+        if (data.success && data.certificateId) {
+          await handleDecodedText(data.certificateId);
+          return;
+        }
+      } catch {
+        // ignore
+      }
+
       setFileError(
         'No QR code could be detected in this image. Make sure the code is in clear focus and well-lit, or enter the ID manually.'
+      );
+    } catch (err) {
+      console.warn('Image QR decode failed:', err);
+      setFileError(
+        'Unable to process this image. Make sure it is a valid picture, or enter the ID manually.'
       );
     } finally {
       setIsFileDecoding(false);
@@ -300,15 +482,14 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
     setIsDragOver(false);
     const file = e.dataTransfer.files?.[0];
     if (file) {
-      await processImageFile(file);
+      await processUploadedFile(file);
     }
   };
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      await processImageFile(file);
-      // Reset input so same file can be re-selected if needed
+      await processUploadedFile(file);
       e.target.value = '';
     }
   };
@@ -343,12 +524,12 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
           </div>
           <div>
             <h3 className="text-sm font-semibold text-ink">
-              {mode === 'camera' ? 'Camera scanner' : 'Upload certificate image'}
+              {mode === 'camera' ? 'Camera scanner' : 'Upload certificate file'}
             </h3>
             <p className="text-2xs text-ink-muted">
               {mode === 'camera'
                 ? 'Scan the physical or digital QR code'
-                : 'Upload or drop a screenshot with a QR code'}
+                : 'Upload certificate PDF, screenshot, or QR image'}
             </p>
           </div>
         </div>
@@ -394,7 +575,7 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
             )}
           >
             <Upload className="h-3.5 w-3.5" aria-hidden />
-            Upload QR image
+            Upload PDF or image
           </button>
         </div>
       </div>
@@ -403,7 +584,9 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
       {detectedId && (
         <div className="mt-4 flex items-center justify-center gap-2 rounded-lg border border-success-line bg-success-soft p-3 text-xs font-medium text-success-fg animate-in fade-in">
           <CheckCircle2 className="h-4 w-4 shrink-0 text-success" />
-          <span>Certificate detected: <strong>{detectedId}</strong>. Loading record...</span>
+          <span>
+            Certificate detected: <strong>{detectedId}</strong>. Loading record...
+          </span>
         </div>
       )}
 
@@ -411,7 +594,6 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
       {mode === 'camera' && !detectedId && (
         <div className="mt-4 space-y-3">
           <div className="relative aspect-square w-full max-w-[340px] mx-auto overflow-hidden rounded-xl border border-line bg-surface-sunken">
-            {/* The html5-qrcode video viewport */}
             <div
               id="qr-camera-stream"
               className={cn(
@@ -420,18 +602,14 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
               )}
             />
 
-            {/* Viewfinder Target Overlay when camera is active */}
+            {/* Viewfinder Overlay */}
             {cameraState === 'running' && (
               <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-                {/* Center Target Box */}
                 <div className="relative h-56 w-56">
-                  {/* Corner Reticles */}
                   <div className="absolute top-0 left-0 h-6 w-6 border-t-2 border-l-2 border-brand" />
                   <div className="absolute top-0 right-0 h-6 w-6 border-t-2 border-r-2 border-brand" />
                   <div className="absolute bottom-0 left-0 h-6 w-6 border-b-2 border-l-2 border-brand" />
                   <div className="absolute bottom-0 right-0 h-6 w-6 border-b-2 border-r-2 border-brand" />
-
-                  {/* Subtle Scanning Beam */}
                   <div className="absolute inset-x-2 top-0 h-0.5 bg-brand shadow-[0_0_8px_rgba(200,16,46,0.8)] animate-pulse" />
                 </div>
               </div>
@@ -469,7 +647,7 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
                     onClick={() => handleSelectMode('file')}
                   >
                     <Upload className="h-3.5 w-3.5" />
-                    Upload image instead
+                    Upload PDF or image
                   </Button>
                   <Button
                     type="button"
@@ -485,7 +663,6 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
             )}
           </div>
 
-          {/* Camera controls toolbar */}
           {cameraState === 'running' && (
             <div className="flex items-center justify-between text-xs text-ink-muted px-1">
               <span>Align the QR code inside the frame</span>
@@ -506,13 +683,13 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
         </div>
       )}
 
-      {/* Mode 2: File Upload / Drag & Drop */}
+      {/* Mode 2: File Upload / Drag & Drop (Supports PDF, PNG, JPG, WEBP) */}
       {mode === 'file' && !detectedId && (
         <div className="mt-4 space-y-3">
           <input
             ref={fileInputRef}
             type="file"
-            accept="image/*"
+            accept="image/*,.pdf,application/pdf"
             onChange={handleFileChange}
             className="hidden"
             id="qr-file-input"
@@ -533,25 +710,26 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
             {isFileDecoding ? (
               <div className="flex flex-col items-center gap-2">
                 <Loader2 className="h-8 w-8 animate-spin text-brand" />
-                <p className="text-xs font-medium text-ink">Analyzing QR code in image...</p>
+                <p className="text-xs font-medium text-ink">Analyzing certificate document...</p>
+                <p className="text-2xs text-ink-muted">Checking QR code and credential signatures</p>
               </div>
             ) : (
               <>
                 <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-surface-muted text-ink-secondary group-hover:scale-105 group-hover:text-brand transition-transform">
-                  <FileImage className="h-6 w-6" aria-hidden />
+                  <FileText className="h-6 w-6" aria-hidden />
                 </div>
 
                 <div className="space-y-1">
                   <p className="text-xs font-semibold text-ink">
-                    Drop certificate QR code here
+                    Drop certificate PDF or image here
                   </p>
                   <p className="text-2xs text-ink-muted">
-                    or click to choose an image from your device
+                    or click to browse from your computer
                   </p>
                 </div>
 
                 <p className="text-3xs uppercase tracking-wider text-ink-subtle">
-                  Supports PNG, JPG, JPEG, WEBP
+                  Supports PDF, PNG, JPG, JPEG, WEBP
                 </p>
 
                 <Button
@@ -592,7 +770,7 @@ export function QrScanner({ onScanSuccess, onClose, className }: QrScannerProps)
         </div>
       )}
 
-      {/* Hidden processing container for scanFile */}
+      {/* Hidden processing container for Html5Qrcode fallback */}
       <div
         id="qr-file-processor"
         className="pointer-events-none fixed -left-[9999px] -top-[9999px] h-48 w-48 opacity-0"
