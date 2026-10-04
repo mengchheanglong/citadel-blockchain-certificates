@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Html5QrcodeScanner } from 'html5-qrcode';
+import { QrScanner, parseCertificateId } from '@/components/verification/qr-scanner';
 import {
   Search,
   QrCode,
@@ -44,24 +44,6 @@ export default function VerifyEntryPage() {
   const [error, setError] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  /** Accepts a bare ID, a full verification URL, or a scanned QR payload. */
-  const parseCertificateId = (raw: string): string => {
-    let value = raw.trim();
-
-    if (value.includes('/verify/')) {
-      value = value.split('/verify/').pop()!.split(/[?#]/)[0];
-    } else if (/^https?:\/\//i.test(value)) {
-      try {
-        const segments = new URL(value).pathname.split('/').filter(Boolean);
-        if (segments.length > 0) value = segments[segments.length - 1];
-      } catch {
-        /* Not a URL after all — fall through with the raw value. */
-      }
-    }
-
-    return decodeURIComponent(value).trim();
-  };
-
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     const id = parseCertificateId(certificateId);
@@ -75,44 +57,6 @@ export default function VerifyEntryPage() {
     setError(null);
     router.push(`/verify/${encodeURIComponent(id)}`);
   };
-
-  useEffect(() => {
-    if (!isScanning) return;
-
-    let scanner: Html5QrcodeScanner | null = null;
-
-    const timer = setTimeout(() => {
-      try {
-        scanner = new Html5QrcodeScanner(
-          'qr-reader',
-          { fps: 10, qrbox: { width: 240, height: 240 } },
-          false
-        );
-
-        scanner.render(
-          (decodedText) => {
-            const id = parseCertificateId(decodedText);
-            if (!id) return;
-            scanner?.clear().catch(() => undefined);
-            setIsScanning(false);
-            router.push(`/verify/${encodeURIComponent(id)}`);
-          },
-          () => {
-            /* Per-frame decode misses are expected; stay quiet. */
-          }
-        );
-      } catch (err) {
-        console.error('Failed to start the QR scanner:', err);
-        setIsScanning(false);
-        setError('The camera could not be started. Enter the certificate ID instead.');
-      }
-    }, 100);
-
-    return () => {
-      clearTimeout(timer);
-      scanner?.clear().catch(() => undefined);
-    };
-  }, [isScanning, router]);
 
   return (
     <div className="flex min-h-screen flex-col bg-canvas">
@@ -173,31 +117,13 @@ export default function VerifyEntryPage() {
             </div>
 
             {isScanning ? (
-              <div className="space-y-3 rounded-lg border border-line bg-surface-muted/60 p-4">
-                <div className="flex items-center justify-between">
-                  <p className="flex items-center gap-2 text-sm font-medium text-ink">
-                    <QrCode className="h-4 w-4 text-brand" aria-hidden />
-                    Camera active
-                  </p>
-                  <Button
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => setIsScanning(false)}
-                    aria-label="Close the scanner"
-                  >
-                    <X aria-hidden />
-                  </Button>
-                </div>
-
-                <p className="text-xs text-ink-muted">
-                  Hold the certificate&apos;s QR code steady inside the frame.
-                </p>
-
-                <div
-                  id="qr-reader"
-                  className="overflow-hidden rounded-md border border-line bg-surface"
-                />
-              </div>
+              <QrScanner
+                onScanSuccess={(id) => {
+                  setIsScanning(false);
+                  router.push(`/verify/${encodeURIComponent(id)}`);
+                }}
+                onClose={() => setIsScanning(false)}
+              />
             ) : (
               <Button
                 type="button"
@@ -207,7 +133,7 @@ export default function VerifyEntryPage() {
                 onClick={() => setIsScanning(true)}
               >
                 <QrCode aria-hidden />
-                Scan QR code with camera
+                Scan QR code
               </Button>
             )}
           </div>
