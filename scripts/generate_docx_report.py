@@ -10,7 +10,7 @@ def set_cell_shading(cell, color_hex):
     shading_elm = parse_xml(f'<w:shd {nsdecls("w")} w:fill="{color_hex}"/>')
     cell._tc.get_or_add_tcPr().append(shading_elm)
 
-def set_cell_margins(cell, top=100, bottom=100, left=140, right=140):
+def set_cell_margins(cell, top=80, bottom=80, left=120, right=120):
     tcPr = cell._tc.get_or_add_tcPr()
     tcMar = OxmlElement('w:tcMar')
     for m, val in [('top', top), ('bottom', bottom), ('left', left), ('right', right)]:
@@ -20,7 +20,7 @@ def set_cell_margins(cell, top=100, bottom=100, left=140, right=140):
         tcMar.append(node)
     tcPr.append(tcMar)
 
-def set_table_borders(table, color="CBD5E1", sz="4", val="single"):
+def set_table_borders(table, color="B0B0B0", sz="4", val="single"):
     tblPr = table._tbl.tblPr
     borders = parse_xml(
         f'<w:tblBorders {nsdecls("w")}>\n'
@@ -34,20 +34,20 @@ def set_table_borders(table, color="CBD5E1", sz="4", val="single"):
     )
     tblPr.append(borders)
 
-def add_callout(doc, text, title=None, border_color="C8102E", bg_color="F8FAFC"):
+def add_academic_callout(doc, text, title=None):
     table = doc.add_table(rows=1, cols=1)
     table.alignment = WD_TABLE_ALIGNMENT.CENTER
     table.autofit = False
     
     cell = table.cell(0, 0)
     cell.width = Inches(6.5)
-    set_cell_shading(cell, bg_color)
-    set_cell_margins(cell, top=120, bottom=120, left=180, right=180)
+    set_cell_shading(cell, "F8F9FA")
+    set_cell_margins(cell, top=100, bottom=100, left=150, right=150)
     
     tcPr = cell._tc.get_or_add_tcPr()
     borders = parse_xml(
         f'<w:tcBorders {nsdecls("w")}>\n'
-        f'  <w:left w:val="single" w:sz="24" w:space="0" w:color="{border_color}"/>\n'
+        f'  <w:left w:val="single" w:sz="18" w:space="0" w:color="333333"/>\n'
         f'  <w:top w:val="none"/>\n'
         f'  <w:right w:val="none"/>\n'
         f'  <w:bottom w:val="none"/>\n'
@@ -61,103 +61,120 @@ def add_callout(doc, text, title=None, border_color="C8102E", bg_color="F8FAFC")
     p.paragraph_format.line_spacing = 1.15
     
     if title:
-        run_title = p.add_run(f"{title}\n")
+        run_title = p.add_run(f"{title}: ")
         run_title.bold = True
-        run_title.font.name = "Calibri"
-        run_title.font.size = Pt(10.5)
-        run_title.font.color.rgb = RGBColor(200, 16, 46) # Burgundy
+        run_title.font.name = "Times New Roman"
+        run_title.font.size = Pt(10)
+        run_title.font.color.rgb = RGBColor(0, 0, 0)
         
     run_text = p.add_run(text)
-    run_text.font.name = "Calibri"
-    run_text.font.size = Pt(9.5)
-    run_text.font.color.rgb = RGBColor(51, 65, 85)
+    run_text.font.name = "Times New Roman"
+    run_text.font.size = Pt(10)
+    run_text.font.color.rgb = RGBColor(30, 30, 30)
     
     doc.add_paragraph().paragraph_format.space_after = Pt(4)
 
-def add_figure(doc, img_path, caption_title, caption_text, width_inches=6.3):
-    MUTED_COLOR = RGBColor(100, 116, 139)
-    DARK_GRAY = RGBColor(30, 41, 59)
-    
+def add_figure(doc, img_path, caption_title, caption_text, width_inches=5.8):
     if os.path.exists(img_path):
         p_img = doc.add_paragraph()
         p_img.paragraph_format.space_before = Pt(8)
-        p_img.paragraph_format.space_after = Pt(4)
+        p_img.paragraph_format.space_after = Pt(3)
         p_img.alignment = WD_ALIGN_PARAGRAPH.CENTER
         run_img = p_img.add_run()
         run_img.add_picture(img_path, width=Inches(width_inches))
         
         cap_p = doc.add_paragraph()
-        cap_p.paragraph_format.space_before = Pt(2)
-        cap_p.paragraph_format.space_after = Pt(14)
+        cap_p.paragraph_format.space_before = Pt(1)
+        cap_p.paragraph_format.space_after = Pt(10)
         cap_p.alignment = WD_ALIGN_PARAGRAPH.CENTER
         
         r_title = cap_p.add_run(f"{caption_title}: ")
         r_title.bold = True
-        r_title.font.name = "Calibri"
+        r_title.font.name = "Times New Roman"
         r_title.font.size = Pt(9.5)
-        r_title.font.color.rgb = DARK_GRAY
+        r_title.font.color.rgb = RGBColor(0, 0, 0)
         
         r_cap = cap_p.add_run(caption_text)
-        r_cap.font.name = "Calibri"
+        r_cap.font.name = "Times New Roman"
         r_cap.font.size = Pt(9.5)
         r_cap.font.italic = True
-        r_cap.font.color.rgb = MUTED_COLOR
+        r_cap.font.color.rgb = RGBColor(60, 60, 60)
     else:
         p = doc.add_paragraph()
         p.paragraph_format.space_before = Pt(4)
-        p.paragraph_format.space_after = Pt(8)
-        r = p.add_run(f"[{caption_title} - Graphic image pending: {os.path.basename(img_path)}]")
-        r.font.name = "Calibri"
-        r.font.size = Pt(10)
+        p.paragraph_format.space_after = Pt(6)
+        r = p.add_run(f"[{caption_title} - Pending image: {os.path.basename(img_path)}]")
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(9.5)
         r.font.italic = True
-        r.font.color.rgb = RGBColor(220, 38, 38)
+        r.font.color.rgb = RGBColor(120, 120, 120)
+
+def add_footer_page_number(run):
+    fldChar1 = parse_xml(r'<w:fldChar %s w:fldCharType="begin"/>' % nsdecls('w'))
+    instrText = parse_xml(r'<w:instrText %s xml:space="preserve"> PAGE </w:instrText>' % nsdecls('w'))
+    fldChar2 = parse_xml(r'<w:fldChar %s w:fldCharType="separate"/>' % nsdecls('w'))
+    fldChar3 = parse_xml(r'<w:fldChar %s w:fldCharType="end"/>' % nsdecls('w'))
+    run._r.append(fldChar1)
+    run._r.append(instrText)
+    run._r.append(fldChar2)
+    run._r.append(fldChar3)
 
 def build_document():
     doc = Document()
     
-    # Page setup: Standard Letter, 1-inch margins
-    sections = doc.sections
-    for section in sections:
+    # Standard Academic 1-inch Margins
+    for section in doc.sections:
         section.top_margin = Inches(1.0)
         section.bottom_margin = Inches(1.0)
         section.left_margin = Inches(1.0)
         section.right_margin = Inches(1.0)
         
-    # Color Palette Tokens
-    BURGUNDY = RGBColor(200, 16, 46)     # Citadel Primary Accent (#C8102E)
-    DARK_GRAY = RGBColor(30, 41, 59)     # Slate-800 (#1E293B)
-    BODY_COLOR = RGBColor(51, 65, 85)    # Slate-700 (#334155)
-    MUTED_COLOR = RGBColor(100, 116, 139)# Slate-500 (#64748B)
-    
+        # Header & Footer setup
+        header = section.header
+        hp = header.paragraphs[0]
+        hp.alignment = WD_ALIGN_PARAGRAPH.RIGHT
+        hrun = hp.add_run("Citadel — Blockchain Certificate Platform | Project Report")
+        hrun.font.name = "Times New Roman"
+        hrun.font.size = Pt(8.5)
+        hrun.font.color.rgb = RGBColor(120, 120, 120)
+        
+        footer = section.footer
+        fp = footer.paragraphs[0]
+        fp.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        frun = fp.add_run("Page ")
+        frun.font.name = "Times New Roman"
+        frun.font.size = Pt(9.5)
+        frun.font.color.rgb = RGBColor(60, 60, 60)
+        add_footer_page_number(frun)
+
     base_dir = os.path.dirname(os.path.abspath(__file__))
     screenshots_dir = os.path.join(base_dir, "..", "docs", "screenshots")
 
-    # Helper text functions
-    def add_section_heading(num_str, title_str):
-        h = doc.add_paragraph()
-        h.paragraph_format.space_before = Pt(20)
-        h.paragraph_format.space_after = Pt(6)
-        r_num = h.add_run(f"{num_str}. ")
-        r_num.bold = True
-        r_num.font.name = "Calibri"
-        r_num.font.size = Pt(15)
-        r_num.font.color.rgb = BURGUNDY
-        
-        r_txt = h.add_run(title_str)
-        r_txt.bold = True
-        r_txt.font.name = "Calibri"
-        r_txt.font.size = Pt(15)
-        r_txt.font.color.rgb = DARK_GRAY
+    # Typography helpers (Formal Times New Roman, Black)
+    BLACK = RGBColor(0, 0, 0)
+    DARK_TEXT = RGBColor(20, 20, 20)
 
-    def add_subheading(sub_str):
+    def add_sec_heading(title_str):
         h = doc.add_paragraph()
-        h.paragraph_format.space_before = Pt(12)
+        h.paragraph_format.space_before = Pt(14)
         h.paragraph_format.space_after = Pt(4)
-        r = h.add_run(sub_str)
+        h.paragraph_format.keep_with_next = True
+        r = h.add_run(title_str)
         r.bold = True
-        r.font.name = "Calibri"
-        r.font.size = Pt(12)
-        r.font.color.rgb = DARK_GRAY
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(13)
+        r.font.color.rgb = BLACK
+
+    def add_sub_heading(title_str):
+        h = doc.add_paragraph()
+        h.paragraph_format.space_before = Pt(9)
+        h.paragraph_format.space_after = Pt(2)
+        h.paragraph_format.keep_with_next = True
+        r = h.add_run(title_str)
+        r.bold = True
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(11)
+        r.font.color.rgb = BLACK
 
     def add_body(text, bold_prefix=None):
         p = doc.add_paragraph()
@@ -166,431 +183,452 @@ def build_document():
         if bold_prefix:
             r_b = p.add_run(bold_prefix)
             r_b.bold = True
-            r_b.font.name = "Calibri"
+            r_b.font.name = "Times New Roman"
             r_b.font.size = Pt(10.5)
-            r_b.font.color.rgb = DARK_GRAY
+            r_b.font.color.rgb = BLACK
         r = p.add_run(text)
-        r.font.name = "Calibri"
+        r.font.name = "Times New Roman"
         r.font.size = Pt(10.5)
-        r.font.color.rgb = BODY_COLOR
+        r.font.color.rgb = DARK_TEXT
         return p
 
     def add_bullet(text, bold_prefix=None):
         p = doc.add_paragraph(style='List Bullet')
-        p.paragraph_format.space_after = Pt(3)
+        p.paragraph_format.space_after = Pt(2.5)
         p.paragraph_format.line_spacing = 1.15
         if bold_prefix:
             r_b = p.add_run(bold_prefix)
             r_b.bold = True
-            r_b.font.name = "Calibri"
+            r_b.font.name = "Times New Roman"
             r_b.font.size = Pt(10.5)
-            r_b.font.color.rgb = DARK_GRAY
+            r_b.font.color.rgb = BLACK
         r = p.add_run(text)
-        r.font.name = "Calibri"
+        r.font.name = "Times New Roman"
         r.font.size = Pt(10.5)
-        r.font.color.rgb = BODY_COLOR
+        r.font.color.rgb = DARK_TEXT
 
     # ----------------------------------------------------
-    # DOCUMENT COVER / TITLE HEADER
+    # ACADEMIC TITLE & METADATA SECTION
     # ----------------------------------------------------
-    title_p = doc.add_paragraph()
-    title_p.paragraph_format.space_before = Pt(0)
-    title_p.paragraph_format.space_after = Pt(4)
-    run_main_title = title_p.add_run("Blockchain-Based Digital Certificate Issuing Platform")
-    run_main_title.bold = True
-    run_main_title.font.name = "Calibri"
-    run_main_title.font.size = Pt(24)
-    run_main_title.font.color.rgb = DARK_GRAY
-    
-    sub_p = doc.add_paragraph()
-    sub_p.paragraph_format.space_after = Pt(16)
-    run_sub = sub_p.add_run("Project Submission Report — Citadel Protocol Architecture, Implementation & Verification")
-    run_sub.font.name = "Calibri"
-    run_sub.font.size = Pt(13)
-    run_sub.font.color.rgb = BURGUNDY
-    run_sub.bold = True
-    
-    # Metadata Card Table
-    meta_table = doc.add_table(rows=7, cols=2)
+    p_inst = doc.add_paragraph()
+    p_inst.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_inst.paragraph_format.space_before = Pt(0)
+    p_inst.paragraph_format.space_after = Pt(2)
+    r_inst = p_inst.add_run("KIRIROM INSTITUTE OF TECHNOLOGY")
+    r_inst.bold = True
+    r_inst.font.name = "Times New Roman"
+    r_inst.font.size = Pt(13)
+    r_inst.font.color.rgb = BLACK
+
+    p_dept = doc.add_paragraph()
+    p_dept.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_dept.paragraph_format.space_after = Pt(16)
+    r_dept = p_dept.add_run("Department of Software Engineering")
+    r_dept.font.name = "Times New Roman"
+    r_dept.font.size = Pt(11)
+    r_dept.font.italic = True
+    r_dept.font.color.rgb = RGBColor(60, 60, 60)
+
+    # Title
+    p_title = doc.add_paragraph()
+    p_title.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_title.paragraph_format.space_before = Pt(6)
+    p_title.paragraph_format.space_after = Pt(4)
+    r_title = p_title.add_run("CITADEL: A BLOCKCHAIN-BASED DIGITAL CERTIFICATE ISSUING AND VERIFICATION PLATFORM")
+    r_title.bold = True
+    r_title.font.name = "Times New Roman"
+    r_title.font.size = Pt(17)
+    r_title.font.color.rgb = BLACK
+
+    p_sub = doc.add_paragraph()
+    p_sub.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    p_sub.paragraph_format.space_after = Pt(14)
+    r_sub = p_sub.add_run("Project Submission Report")
+    r_sub.font.name = "Times New Roman"
+    r_sub.font.size = Pt(12)
+    r_sub.font.color.rgb = RGBColor(60, 60, 60)
+
+    # Formal Metadata Table
+    meta_table = doc.add_table(rows=6, cols=2)
     meta_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     meta_table.autofit = False
-    set_table_borders(meta_table, color="E2E8F0")
+    set_table_borders(meta_table, color="D0D0D0")
     
     meta_data = [
-        ("Project Title", "Citadel — Blockchain Digital Certificate Issuing & Verification Platform"),
         ("Student / Author", "Long Mengchheang"),
         ("Institution", "Kirirom Institute of Technology (KIT)"),
-        ("Project Arrangement", "Individual / Solo Capstone Project (100% Contribution)"),
+        ("Project Type", "Individual Capstone Project (100% Contribution)"),
         ("GitHub Repository", "https://github.com/mengchheanglong/citadel-blockchain-certificates"),
-        ("Demo Video URL", "Available on Google Drive / YouTube (Publicly Accessible)"),
+        ("Demonstration Video", "Available on Google Drive / YouTube (Public Link)"),
         ("Submission Date", "October 2026"),
     ]
     
-    col_widths = [Inches(2.0), Inches(4.5)]
+    col_widths = [Inches(1.8), Inches(4.7)]
     for i, (label, val) in enumerate(meta_data):
         row = meta_table.rows[i]
-        
         c0 = row.cells[0]
         c0.width = col_widths[0]
-        set_cell_shading(c0, "F8FAFC")
-        set_cell_margins(c0, top=50, bottom=50, left=100, right=100)
+        set_cell_shading(c0, "F5F5F5")
+        set_cell_margins(c0, top=40, bottom=40, left=80, right=80)
         p0 = c0.paragraphs[0]
         p0.paragraph_format.space_after = Pt(0)
         r0 = p0.add_run(label)
         r0.bold = True
-        r0.font.name = "Calibri"
+        r0.font.name = "Times New Roman"
         r0.font.size = Pt(9.5)
-        r0.font.color.rgb = DARK_GRAY
+        r0.font.color.rgb = BLACK
         
         c1 = row.cells[1]
         c1.width = col_widths[1]
         set_cell_shading(c1, "FFFFFF")
-        set_cell_margins(c1, top=50, bottom=50, left=100, right=100)
+        set_cell_margins(c1, top=40, bottom=40, left=80, right=80)
         p1 = c1.paragraphs[0]
         p1.paragraph_format.space_after = Pt(0)
         r1 = p1.add_run(val)
-        r1.font.name = "Calibri"
+        r1.font.name = "Times New Roman"
         r1.font.size = Pt(9.5)
-        r1.font.color.rgb = BURGUNDY if "http" in val else BODY_COLOR
-        if "http" in val:
-            r1.bold = True
+        r1.font.color.rgb = DARK_TEXT
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(12)
+    doc.add_paragraph().paragraph_format.space_after = Pt(8)
 
     # ----------------------------------------------------
-    # EXECUTIVE SUMMARY
+    # ABSTRACT
     # ----------------------------------------------------
-    add_callout(
+    add_academic_callout(
         doc,
-        "Executive Summary: Citadel is an enterprise-grade digital credentialing platform that solves certificate fraud through the Ethereum blockchain. Traditional paper and static PDF credentials are easy to forge with graphic editors and require slow, manual registrar inquiries to verify. Citadel provides a hybrid architecture where detailed student data remains private in an off-chain PostgreSQL database, while a canonical SHA-256 cryptographic fingerprint is permanently anchored on an Ethereum EVM smart contract (CertificateRegistry.sol). Anyone can verify a credential in seconds for free (zero gas fees) by scanning the QR code with their camera, uploading a diploma image, or dropping a PDF certificate directly into the browser.",
-        "Executive Summary",
-        border_color="C8102E",
-        bg_color="F8FAFC"
+        "Abstract: Traditional paper diplomas and static PDF certificates suffer from widespread forgery and require manual, time-consuming registrar inquiries for validation. Citadel is a decentralized web platform designed to eliminate credential fraud using the Ethereum blockchain. The platform adopts a hybrid architecture: student academic metadata is stored off-chain in a secure PostgreSQL database to protect privacy and optimize gas costs, while a canonical SHA-256 cryptographic hash of the credential is committed to an EVM smart contract (CertificateRegistry.sol). Public verifiers can authenticate credentials in seconds at zero gas cost via manual ID entry, camera QR scanning, image upload, or native PDF drag-and-drop. The system features a real-time diploma issuance studio, automated PDF generation, SMTP delivery, dynamic expiration evaluation, and on-chain revocation with audit logging. The implementation was verified with a 52-test automated unit and fuzz testing suite achieving a 100% pass rate.",
+        title="Abstract"
     )
 
     # ----------------------------------------------------
-    # SECTION 1: SYSTEM OVERVIEW & PROBLEM STATEMENT
+    # 1. INTRODUCTION & PROBLEM STATEMENT
     # ----------------------------------------------------
-    add_section_heading("1", "System Overview & Problem Statement")
-    add_subheading("1.1 The Credentialing Dilemma")
-    add_body("Academic institutions, licensing boards, and vocational academies face unprecedented challenges with credential authentication:")
-    add_bullet(" Static PDF files and paper certificates can be manipulated in minutes using off-the-shelf PDF editors or generative AI, altering graduate names, degree classifications, and graduation years with pixel-level precision.", "Rampant Credential Forgery:")
-    add_bullet(" Employers, recruiters, and graduate admissions officers currently rely on manual verification procedures — sending verification emails, calling university registrars, or paying costly background check intermediaries — requiring 2 to 4 weeks per candidate.", "Operational Delay & Expense:")
-    add_bullet(" Centralized student record databases represent single points of failure susceptible to administrative corruption, insider tampering, database ransomware, or accidental record destruction.", "Centralized Vulnerabilities:")
-
-    add_subheading("1.2 Citadel's Core Value Propositions")
-    add_body("Citadel eliminates diploma fraud through four core engineering guarantees:")
-    add_bullet(" Each issued certificate is cryptographically fingerprinted with SHA-256 and committed to Ethereum. Changing even a single character in the graduate's name or graduation date immediately invalidates the cryptographic proof.", "1. Mathematical Immutability:")
-    add_bullet(" Employers and the public verify any credential in real time without needing a wallet, cryptocurrency, or platform account. Verification executes as a free on-chain view query.", "2. Zero-Gas Public Verification:")
-    add_bullet(" As an administrator enters information in the Issue Studio, an on-screen preview reflects changes in real time. Upon issuance, a vector-rendered PDF diploma is dispatched instantly via automated SMTP email.", "3. Automated Issuance & Dispatch:")
-    add_bullet(" Accredited institutions maintain full governance with configurable validity periods (Lifetime, 1 Year, 2 Years) and can revoke compromised credentials with on-chain audit reasons.", "4. Dynamic Lifecycle Governance:")
+    add_sec_heading("1. Introduction and Problem Statement")
+    add_body("Academic and professional credentialing systems face critical challenges in maintaining document authenticity and operational trust:")
+    add_bullet(" Static PDF files and physical diplomas can be modified using desktop editing software or generative tools to alter student names, graduation dates, or honours without visual detection.", "Credential Forgery: ")
+    add_bullet(" Employers and university registrars rely on phone calls, postal mail, or manual email exchanges to verify records, averaging 2 to 4 weeks per inquiry.", "Inefficient Verification: ")
+    add_bullet(" Centralized academic databases represent single points of failure vulnerable to unauthorized tampering, data corruption, and administrative loss.", "Centralized Data Risks: ")
+    add_body("Citadel addresses these vulnerabilities by establishing a tamper-proof, decentralized credential issuance and verification platform with four key design objectives:")
+    add_bullet(" Commit cryptographic proofs to the Ethereum blockchain so that any modification to graduate records invalidates verification.", "1. Mathematical Immutability: ")
+    add_bullet(" Allow employers and the public to verify any credential in real time without requiring blockchain wallets, tokens, or gas fees.", "2. Zero-Gas Verification: ")
+    add_bullet(" Provide an interactive split-screen issuance studio that updates a vector diploma preview in real time and automates PDF generation and email delivery.", "3. End-to-End Automation: ")
+    add_bullet(" Support configurable validity periods (e.g. lifetime or 1-year licenses) and on-chain revocation with recorded audit justifications.", "4. Lifecycle Governance: ")
 
     # ----------------------------------------------------
-    # SECTION 2: SYSTEM ARCHITECTURE
+    # 2. SYSTEM ARCHITECTURE & OPERATIONAL WORKFLOW
     # ----------------------------------------------------
-    add_section_heading("2", "System Architecture")
-    add_body("Citadel utilizes a clean four-tier architectural separation of concerns designed for enterprise reliability, high throughput, and strict regulatory compliance:")
-    add_bullet(" Next.js 14.2 App Router with React, Tailwind CSS, Radix UI Primitives, and Citadel Burgundy Design System. Incorporates a dark-mode institutional marketing portal and a high-contrast organization operations studio.", "1. Presentation Layer (Frontend):")
-    add_bullet(" Next.js Server Route Handlers and Server Actions. Enforces Zod schema validation, computes deterministic canonical digests, generates vector diplomas with jsPDF, and coordinates SMTP delivery via Nodemailer.", "2. Application & API Layer (Backend):")
-    add_bullet(" PostgreSQL managed via Prisma ORM 5.18. Stores organization profiles, recipient details, and audit history off-chain to safeguard privacy and reduce blockchain storage overhead.", "3. Persistence Layer (Database):")
-    add_bullet(" Solidity 0.8.24 smart contract (CertificateRegistry.sol) deployed on the Ethereum EVM (Sepolia Testnet / Hardhat). Serves as the immutable source of truth for 32-byte certificate hashes and revocation states.", "4. Decentralized Ledger Layer (Blockchain):")
+    add_sec_heading("2. System Architecture and Operational Workflow")
+    add_body("Citadel is engineered across four functional layers to decouple user presentation, business logic, storage, and consensus verification:")
+    add_bullet(" Next.js 14 App Router, TypeScript, and Tailwind CSS. Provides an administrative operations portal and a clean public verification engine.", "1. Presentation Layer: ")
+    add_bullet(" Server route handlers and Server Actions that enforce Zod schema validation, compute deterministic SHA-256 hashes, render vector diplomas with jsPDF, and manage Nodemailer SMTP notifications.", "2. Application Layer: ")
+    add_bullet(" PostgreSQL managed through Prisma ORM 5.18. Stores recipient details, degree titles, and issuer profiles off-chain.", "3. Persistence Layer: ")
+    add_bullet(" Solidity 0.8.24 smart contract (CertificateRegistry.sol) deployed on the Ethereum EVM (Sepolia Testnet / Hardhat). Serves as the immutable registry for 32-byte credential hashes.", "4. Decentralized Ledger Layer: ")
 
-    # Figure 2.1: Architecture Diagram
+    # Figure 1: Architecture
     add_figure(
         doc,
         os.path.join(screenshots_dir, "diagram_architecture.png"),
-        "Figure 2.1",
-        "Citadel Four-Tier Architectural Model (Presentation, Application API, Off-Chain PostgreSQL Database, and EVM Blockchain Ledger)"
+        "Figure 1",
+        "Citadel four-tier system architecture model.",
+        width_inches=5.8
     )
 
-    # ----------------------------------------------------
-    # SECTION 3: END-TO-END HOW IT WORKS & SYSTEM FLOWS
-    # ----------------------------------------------------
-    add_section_heading("3", "End-to-End System Flows & How It Works")
-    add_body("The complete credential lifecycle is split into two complementary phases: Issuance (Organization) and Verification (Public Verifier).")
+    add_sub_heading("2.1 End-to-End Credential Lifecycle")
+    add_body("The platform coordinates two primary workflows: the Issuance Pipeline and the Verification Pipeline:")
+    add_bullet(" The accredited institution inputs student information in the Issue Studio. The server computes a canonical SHA-256 digest and records it on Ethereum via Ethers.js v6. A vector PDF diploma with an embedded QR code is generated and dispatched via email.", "Stage 1 (Issuance Pipeline): ")
+    add_bullet(" An employer or verifier enters the Certificate ID or scans the QR code on /verify. The system retrieves the record, recomputes the hash, queries the smart contract via a zero-gas view function, and displays an official verification badge.", "Stage 2 (Verification Pipeline): ")
 
-    # Figure 3.1: Complete How It Works Infographic
+    # Figure 2: How It Works
     add_figure(
         doc,
         os.path.join(screenshots_dir, "diagram_how_it_works.png"),
-        "Figure 3.1",
-        "Citadel End-to-End Operational Workflow: Stage 1 Issuance Pipeline (Left) and Stage 2 Public Verification Pipeline (Right)"
+        "Figure 2",
+        "End-to-end credential lifecycle: Stage 1 Issuance Pipeline and Stage 2 Public Verification Pipeline.",
+        width_inches=5.8
     )
 
-    add_subheading("3.1 Stage 1: How a Certificate is Issued & Locked on the Blockchain")
-    add_bullet(" The accredited institution logs into the dashboard and opens the Issue Studio. As the registrar fills in student details, a real-time vector diploma preview renders instantly.", "Step 1 (Data Entry & Preview):")
-    add_bullet(" The backend generates a unique ID (e.g., CERT-2026-X942K) and computes a deterministic SHA-256 fingerprint from the sorted metadata payload.", "Step 2 (Canonical Hashing):")
-    add_bullet(" The system calls issueCertificate on CertificateRegistry.sol using Ethers.js v6. Ethereum miners record the transaction, returning an immutable Tx Hash and Block Number.", "Step 3 (Blockchain Anchoring):")
-    add_bullet(" The platform saves metadata and on-chain proofs in PostgreSQL, generates a high-resolution PDF diploma with an embedded QR code, and emails the credential to the graduate.", "Step 4 (PDF & Email Dispatch):")
-
-    add_subheading("3.2 Stage 2: How Anyone Verifies a Certificate in Seconds")
-    add_bullet(" An employer or admissions officer navigates to /verify and provides the credential via camera scan, image upload, PDF document drop, or typing the ID.", "Step 1 (Multi-Modal Input):")
-    add_bullet(" The application retrieves the off-chain record and re-computes the SHA-256 fingerprint.", "Step 2 (Off-Chain Verification):")
-    add_bullet(" Citadel executes a free (zero-gas) call to verifyCertificate on the smart contract, comparing the recomputed hash against the immutable ledger and checking validity timestamps.", "Step 3 (Smart Contract Query):")
-    add_bullet(" The user sees an official cryptographic proof badge displaying Valid (Green), Expired (Yellow), or Revoked (Red) with verifiable block explorer links.", "Step 4 (Instant Status & Proof):")
-
-    # Figure 3.2: Sequence Diagram
-    add_figure(
+    # ----------------------------------------------------
+    # 3. BLOCKCHAIN & CRYPTOGRAPHIC DESIGN
+    # ----------------------------------------------------
+    add_sec_heading("3. Blockchain and Cryptographic Mechanism")
+    add_sub_heading("3.1 Hybrid Storage Architecture")
+    add_body("Storing complete documents directly on Ethereum incurs high gas costs and violates privacy regulations (GDPR/FERPA), which prohibit permanent on-chain storage of personal identities. Citadel resolves this by storing metadata in PostgreSQL while anchoring only a 32-byte hash on-chain.")
+    
+    add_sub_heading("3.2 Deterministic Canonical Hashing Protocol")
+    add_body("To eliminate JSON key-ordering discrepancies across different platforms, Citadel sorts object keys lexicographically before computing the cryptographic digest:")
+    add_academic_callout(
         doc,
-        os.path.join(screenshots_dir, "diagram_user_flow.png"),
-        "Figure 3.2",
-        "Sequence Diagram of Technical Interactions Between University Admin, Web Application, EVM Smart Contract, Database, and Public Verifier"
+        "Canonical Payload = JSON.stringify(sortKeys({ certId, recipientName, courseName, issueDate, organizationId }))\n"
+        "certHash = SHA-256(Canonical Payload)\n"
+        "certIdHash = keccak256(certId)",
+        title="Mathematical Specification"
     )
+    add_body("Due to the avalanche effect of SHA-256, changing even a single byte in the graduate's name or course title produces a completely different hash, immediately causing on-chain verification to fail.")
+
+    add_sub_heading("3.3 Smart Contract Implementation (CertificateRegistry.sol)")
+    add_body("The CertificateRegistry contract maintains state transitions for each credential across five distinct statuses:")
+    add_bullet(" Credential exists on-chain, hash matches, and block.timestamp is before expirationDate.", "Valid (1): ")
+    add_bullet(" Credential is authentic, but the validity window has elapsed.", "Expired (2): ")
+    add_bullet(" Formally invalidated by the issuer with a mandatory recorded audit reason.", "Revoked (3): ")
+    add_bullet(" Certificate ID exists, but the supplied data produces a mismatched hash.", "HashMismatch (4): ")
+    add_bullet(" Certificate ID has never been registered on-chain.", "NotFound (0): ")
 
     # ----------------------------------------------------
-    # SECTION 4: DATABASE DESIGN (ER DIAGRAM)
+    # 4. DATABASE DESIGN & DATA MODEL
     # ----------------------------------------------------
-    add_section_heading("4", "Database Design & Data Dictionary")
-    add_body("To protect student privacy and avoid exorbitant gas costs, detailed text is stored off-chain in PostgreSQL, with foreign keys linking to on-chain transaction hashes:")
+    add_sec_heading("4. Database Design and Data Model")
+    add_body("The off-chain relational database organizes information across three primary entities:")
 
-    # Figure 4.1: ER Diagram
+    # Figure 3: ER Diagram
     add_figure(
         doc,
         os.path.join(screenshots_dir, "diagram_er.png"),
-        "Figure 4.1",
-        "Relational Entity-Relationship Model (Prisma ORM PostgreSQL Schema showing Organization, Certificate, and BlockchainTransaction)"
+        "Figure 3",
+        "Entity-Relationship model representing Organization, Certificate, and BlockchainTransaction entities.",
+        width_inches=5.8
     )
 
+    # Clean Academic Table for Data Model
     db_table = doc.add_table(rows=4, cols=3)
     db_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     db_table.autofit = False
-    set_table_borders(db_table, color="CBD5E1")
+    set_table_borders(db_table, color="B0B0B0")
     
-    headers = ["Table", "Key Columns & Constraints", "Architectural Purpose"]
+    headers = ["Table", "Key Attributes & Constraints", "Description"]
     for j, h in enumerate(headers):
         c = db_table.rows[0].cells[j]
-        set_cell_shading(c, "1E293B")
-        set_cell_margins(c, top=60, bottom=60, left=100, right=100)
+        set_cell_shading(c, "EAEAEA")
+        set_cell_margins(c, top=40, bottom=40, left=60, right=60)
         p = c.paragraphs[0]
         r = p.add_run(h)
         r.bold = True
-        r.font.name = "Calibri"
+        r.font.name = "Times New Roman"
         r.font.size = Pt(9.5)
-        r.font.color.rgb = RGBColor(255, 255, 255)
+        r.font.color.rgb = BLACK
         
     db_rows = [
-        ("Organization", "id (UUID PK), name, email (UK), website, description, createdAt", "Stores verified accredited institutions and credential issuer accounts."),
-        ("Certificate", "id (UUID PK), certificateId (UK), recipientName, recipientEmail, courseName, issueDate, expiryDate, status, certHash, organizationId (FK)", "Maintains academic records, recipient identifiers, expiration timestamps, and SHA-256 digests."),
-        ("BlockchainTransaction", "id (UUID PK), certificateId (FK), txHash (UK), blockNumber, networkName, contractAddress, action, timestamp, confirmed", "Immutable audit trail of Ethereum on-chain transaction receipts and block confirmations."),
+        ("Organization", "id (PK UUID), name, email (UK), website, description, createdAt", "Stores verified institution profile and issuer accounts."),
+        ("Certificate", "id (PK UUID), certificateId (UK), recipientName, recipientEmail, courseName, issueDate, expiryDate, status, certHash, organizationId (FK)", "Maintains academic records, expiration timestamps, and canonical SHA-256 digests."),
+        ("BlockchainTransaction", "id (PK UUID), certificateId (FK), txHash (UK), blockNumber, networkName, contractAddress, action, timestamp, confirmed", "Audit log of on-chain Ethereum transaction receipts and block confirmations."),
     ]
     
     widths = [Inches(1.8), Inches(2.7), Inches(2.0)]
     for i, row_data in enumerate(db_rows):
         row = db_table.rows[i+1]
-        bg = "F8FAFC" if i % 2 == 0 else "FFFFFF"
         for j, val in enumerate(row_data):
             c = row.cells[j]
             c.width = widths[j]
-            set_cell_shading(c, bg)
-            set_cell_margins(c, top=50, bottom=50, left=80, right=80)
+            set_cell_margins(c, top=40, bottom=40, left=60, right=60)
             p = c.paragraphs[0]
             p.paragraph_format.space_after = Pt(0)
             r = p.add_run(val)
-            r.font.name = "Calibri"
+            r.font.name = "Times New Roman"
             r.font.size = Pt(9.0)
-            r.font.color.rgb = DARK_GRAY if j == 0 else BODY_COLOR
+            r.font.color.rgb = DARK_TEXT
             if j == 0:
                 r.bold = True
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(8)
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
     # ----------------------------------------------------
-    # SECTION 5: BLOCKCHAIN & CRYPTOGRAPHIC DESIGN
+    # 5. CORE IMPLEMENTATION & USER INTERFACE
     # ----------------------------------------------------
-    add_section_heading("5", "Blockchain & Cryptographic Design")
-    add_subheading("5.1 Hybrid On-Chain / Off-Chain Architecture")
-    add_body("Storing complete academic transcripts and personal identities directly on the public Ethereum blockchain has two critical drawbacks:")
-    add_bullet(" Storing megabytes of PDF bytes or strings on Ethereum costs thousands of dollars in gas fees.", "Gas Cost Efficiency:")
-    add_bullet(" Privacy regulations (such as GDPR and FERPA) mandate that student personal data must not be exposed permanently on an immutable public ledger.", "Data Privacy (GDPR / FERPA):")
-    add_body("Citadel's Hybrid Solution: Detailed records remain private in PostgreSQL, while only the 32-byte cryptographic hash of the certificate is committed to the blockchain.")
+    add_sec_heading("5. Core System Implementation and User Interface")
+    add_sub_heading("5.1 Real-Time Issuance Studio")
+    add_body("The Issue Studio provides an administrative interface where entered graduate metadata renders onto an SVG/canvas diploma in real time. Upon submission, the record is hashed, committed to Ethereum, and dispatched as a PDF via email.")
 
-    add_subheading("5.2 Deterministic Canonical Hashing Protocol")
-    add_body("To prevent JSON key-ordering discrepancies across different programming platforms, Citadel sorts object keys deterministically before calculating the SHA-256 digest:")
-    add_callout(
-        doc,
-        "Canonical Payload = JSON.stringify(sortKeys({ certId, recipientName, courseName, issueDate, organizationId }))\n"
-        "certHash = SHA-256(Canonical Payload)\n"
-        "certIdHash = keccak256(certId)",
-        "Mathematical Cryptographic Digest Specification"
-    )
-
-    # ----------------------------------------------------
-    # SECTION 6: SMART CONTRACT ARCHITECTURE
-    # ----------------------------------------------------
-    add_section_heading("6", "Smart Contract Architecture (CertificateRegistry.sol)")
-    add_body("The CertificateRegistry.sol smart contract is written in Solidity 0.8.24 and compiled with Hardhat:")
-
-    # Figure 6.1: Smart Contract Diagram
+    # Figure 4: Issue Studio
     add_figure(
         doc,
-        os.path.join(screenshots_dir, "diagram_smart_contract.png"),
-        "Figure 6.1",
-        "CertificateRegistry.sol Smart Contract Architecture: State Machine Lifecycle, Modifiers, and Cryptographic Invariance"
+        os.path.join(screenshots_dir, "05_issue_studio_live_preview.png"),
+        "Figure 4",
+        "Split-screen Issue Studio: form fields on left and real-time vector diploma preview on right.",
+        width_inches=5.8
     )
 
-    add_subheading("6.1 State Machine Lifecycle")
-    add_bullet(" The certificate exists on-chain, its cryptographic hash matches, and current block.timestamp is before expirationDate.", "Valid (Status 1):")
-    add_bullet(" The certificate is authentic, but its designated validity window has elapsed.", "Expired (Status 2):")
-    add_bullet(" The certificate was officially revoked on-chain by the issuing institution with a mandatory audit reason.", "Revoked (Status 3):")
-    add_bullet(" The Certificate ID is registered, but the presented data payload has been altered, producing an invalid hash.", "HashMismatch (Status 4):")
-    add_bullet(" The Certificate ID has never been issued on the blockchain.", "NotFound (Status 0):")
+    add_sub_heading("5.2 Multi-Modal Verification Engine")
+    add_body("To support diverse devices, Citadel implements a multi-modal verification engine on /verify:")
+    add_bullet(" Uses the low-level Html5Qrcode controller to stream video directly into a viewfinder frame with corner reticles and mobile camera switching.", "1. Live Camera Stream: ")
+    add_bullet(" Employs a multi-pass canvas decoder with jsQR that evaluates native image dimensions, bottom corner quadrants, and upscales small crops.", "2. Multi-Pass jsQR Image Decoder: ")
+    add_bullet(" Allows verifiers to drag and drop certificate PDF documents directly. The system extracts certificate identifiers from binary text streams and decompresses PDF layers via /api/verify/scan-file.", "3. PDF Document Ingestion: ")
 
-    add_subheading("6.2 Key Functions & Security Modifiers")
-    add_bullet(" Enforces authorized issuer role, checks that the ID has not been used, verifies future expiry, and commits the certificate to the blockchain. Emits CertificateIssued.", "issueCertificate(bytes32 certIdHash, bytes32 certHash, uint256 expirationDate):")
-    add_bullet(" Free view function (zero gas). Compares the presented hash against the on-chain ledger and dynamically computes expiration.", "verifyCertificate(bytes32 certIdHash, bytes32 certHash):")
-    add_bullet(" Only the original issuing institution or contract administrator can revoke an active certificate. Emits CertificateRevoked.", "revokeCertificate(bytes32 certIdHash, string reason):")
-
-    # ----------------------------------------------------
-    # SECTION 7: MULTI-MODAL VERIFICATION ENGINE
-    # ----------------------------------------------------
-    add_section_heading("7", "Advanced Multi-Modal Verification Engine")
-    add_body("To guarantee that any verifier can check certificates across diverse devices and real-world conditions, Citadel incorporates an advanced multi-modal scanning engine:")
-    add_bullet(" Uses the low-level Html5Qrcode controller to mount an in-browser camera feed directly into a styled viewfinder frame with corner reticles and an animated scanning beam, supporting camera toggling on mobile devices.", "1. Live Camera Stream:")
-    add_bullet(" A high-performance canvas decoder scans images at full native resolution. It evaluates full images, upscales tiny crops (e.g. 65x65 px snippets), and scans bottom-right quadrants where Citadel certificates position QR codes.", "2. Multi-Pass jsQR Image Decoder:")
-    add_bullet(" Verifiers can drag and drop certificate PDF documents directly into the verification portal. The platform extracts certificate identifiers from binary text streams and decompresses PDF layers via a dedicated API (/api/verify/scan-file).", "3. Full PDF Document Ingestion:")
-    add_bullet(" If camera access is denied or unavailable on a desktop computer without a webcam, the portal displays a polite error card with a 1-click fallback to file upload.", "4. Graceful Error Handling:")
-
-    # ----------------------------------------------------
-    # SECTION 8: USER INTERFACE WALKTHROUGH & SCREENSHOTS
-    # ----------------------------------------------------
-    add_section_heading("8", "User Interface Design & Screenshots")
-    add_body("Below are the high-resolution screenshots captured directly from the live running Citadel application, showing fully loaded data tables, metrics, and zero skeleton placeholders:")
-
-    screenshots = [
-        ("Figure 8.1: Institutional Marketing Landing Page (/)", "01_landing_page.png", "Deep obsidian background (#000000) with Burgundy Red (#C8102E) highlights, value proposition, protocol metrics, and instant verification search bar."),
-        ("Figure 8.2: Organization Authentication Portal (/login)", "02_login_page.png", "Institution login interface featuring Citadel Burgundy Red buttons, input focus rings, and route guards."),
-        ("Figure 8.3: Institutional Registration (/register)", "03_register_page.png", "Institution onboarding portal for registering accredited issuing bodies with secure cryptographic access."),
-        ("Figure 8.4: Executive Organization Dashboard (/dashboard)", "04_dashboard_overview.png", "Executive welcome banner, 4 live stat cards (Total Issued, Active Valid, Expired, Revoked), issuance trend graph, and fully populated recent credentials ledger."),
-        ("Figure 8.5: Split-Screen Certificate Issuing Studio (/dashboard/certificates/new)", "05_issue_studio_live_preview.png", "Interactive split-screen interface: Left side contains the issuance form; Right side renders the live vector diploma preview canvas updating in real time."),
-        ("Figure 8.6: Certificate Registry & Audit CSV Export (/dashboard/certificates)", "06_certificate_registry.png", "Complete credential registry with filter tabs (All, Valid, Expired, Revoked), recipient avatars, status pills, and client-side CSV spreadsheet export."),
-        ("Figure 8.7: Public Verification Portal with Multi-Modal Scanner (/verify)", "07_public_verify_portal.png", "Public verification engine supporting manual Certificate ID lookup, live camera feed, image upload, and direct PDF document dropzone."),
-        ("Figure 8.8: Cryptographic Proof & Verification Result — Genuine & Valid (/verify/[id])", "08_verification_result_valid.png", "Verified credential view showing authentic green status badge, recipient metadata, and Ethereum blockchain proof card (Tx Hash, Block Number, Contract Address)."),
-        ("Figure 8.9: Cryptographic Proof & Verification Result — Revoked Credential (/verify/[id])", "09_verification_result_revoked.png", "Public view of an invalidated certificate showing prominent red revocation alert, timestamp, issuer recorded reason, and watermarked diploma."),
-    ]
-
-    for title, filename, caption in screenshots:
-        img_path = os.path.join(screenshots_dir, filename)
-        add_figure(doc, img_path, title, caption, width_inches=6.2)
-
-    # ----------------------------------------------------
-    # SECTION 9: TESTING, VERIFICATION & QUALITY ASSURANCE
-    # ----------------------------------------------------
-    add_section_heading("9", "Testing, Verification & Quality Assurance")
-    add_body("Citadel includes a comprehensive 52-test automated unit, integration, and fuzz testing suite covering all critical edge cases:")
-    add_bullet(" Verified deterministic sorting, whitespace invariance, and key-order resilience across platforms.", "Cryptographic Hashing Tests (12 Tests):")
-    add_bullet(" Verified smart contract deployment, issuer authorization, unique ID enforcement, valid query execution, and revocation state changes.", "Smart Contract Functional Tests (28 Tests):")
-    add_bullet(" Tested 1-bit hash tampering, extreme future dates (50+ years), timestamp boundary conditions, and rapid bulk issuance stress testing.", "Advanced Fuzz & Boundary Tests (12 Tests):")
-    add_bullet(" E2E testing using Playwright to verify camera permissions, multi-pass QR image recognition, and PDF file extraction.", "Multi-Modal Scanner E2E Tests:")
-    
-    add_callout(
+    # Figure 5: Verification Portal
+    add_figure(
         doc,
-        "Total Tests Executed: 52\n"
-        "Passing Tests: 52 (100% Pass Rate)\n"
-        "Failing Tests: 0\n"
-        "TypeScript Strict Mode Check (npx tsc --noEmit): 0 Errors",
-        "Test Execution Summary",
-        border_color="16A34A",
-        bg_color="F0FDF4"
+        os.path.join(screenshots_dir, "07_public_verify_portal.png"),
+        "Figure 5",
+        "Public verification portal supporting ID search, camera scanning, and file upload.",
+        width_inches=5.8
+    )
+
+    # Figure 6: Verification Result
+    add_figure(
+        doc,
+        os.path.join(screenshots_dir, "08_verification_result_valid.png"),
+        "Figure 6",
+        "Cryptographic proof result displaying verified metadata and Ethereum transaction details.",
+        width_inches=5.8
     )
 
     # ----------------------------------------------------
-    # SECTION 10: INDIVIDUAL CONTRIBUTION REPORT
+    # 6. TESTING & EVALUATION RESULTS
     # ----------------------------------------------------
-    add_section_heading("10", "Individual Contribution Report")
-    add_body("This project was conducted as an Individual / Solo Capstone Project by Long Mengchheang. 100% of all technical planning, architecture, design, and implementation work was performed independently:")
+    add_sec_heading("6. Testing, Evaluation and Results")
+    add_body("The system was validated using a comprehensive 52-test automated suite executed through Hardhat and Playwright:")
+    add_bullet(" Validated deterministic sorting, whitespace resilience, and cross-platform key invariance.", "Cryptographic Hashing Tests (12 Tests): ")
+    add_bullet(" Verified deployment, access control modifiers, uniqueness enforcement, verification logic, and revocation events.", "Smart Contract Functional Tests (28 Tests): ")
+    add_bullet(" Evaluated single-bit hash alterations, extreme future dates (50+ years), timestamp boundary conditions, and concurrent issuance.", "Fuzz and Edge Case Tests (12 Tests): ")
+
+    # Test summary table
+    test_table = doc.add_table(rows=5, cols=3)
+    test_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    test_table.autofit = False
+    set_table_borders(test_table, color="B0B0B0")
+    
+    t_headers = ["Test Category", "Scope and Assertions", "Result"]
+    for j, h in enumerate(t_headers):
+        c = test_table.rows[0].cells[j]
+        set_cell_shading(c, "EAEAEA")
+        set_cell_margins(c, top=40, bottom=40, left=60, right=60)
+        p = c.paragraphs[0]
+        r = p.add_run(h)
+        r.bold = True
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = BLACK
+        
+    t_rows = [
+        ("Cryptographic Unit Tests", "Canonical sorting, SHA-256 consistency, keystore validation", "12 / 12 Passed (100%)"),
+        ("Smart Contract Tests", "CertificateRegistry deployment, issuance, zero-gas verify, revoke", "28 / 28 Passed (100%)"),
+        ("Fuzz & Edge Tests", "1-bit hash tampering, boundary timestamps, high-volume stress", "12 / 12 Passed (100%)"),
+        ("TypeScript Static Check", "Strict compiler type-checking (npx tsc --noEmit)", "0 Errors (100% Valid)"),
+    ]
+    
+    t_widths = [Inches(2.0), Inches(3.2), Inches(1.3)]
+    for i, row_data in enumerate(t_rows):
+        row = test_table.rows[i+1]
+        for j, val in enumerate(row_data):
+            c = row.cells[j]
+            c.width = t_widths[j]
+            set_cell_margins(c, top=40, bottom=40, left=60, right=60)
+            p = c.paragraphs[0]
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(val)
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(9.0)
+            r.font.color.rgb = DARK_TEXT
+            if j == 0 or j == 2:
+                r.bold = True
+
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
+
+    # ----------------------------------------------------
+    # 7. PROJECT DELIVERABLES & CONTRIBUTION
+    # ----------------------------------------------------
+    add_sec_heading("7. Project Deliverables and Contribution")
+    add_body("This project was conducted as an individual capstone project by Long Mengchheang. All architectural planning, implementation, smart contracts, frontend, backend, and testing were performed independently:")
     
     contrib_table = doc.add_table(rows=6, cols=3)
     contrib_table.alignment = WD_TABLE_ALIGNMENT.CENTER
     contrib_table.autofit = False
-    set_table_borders(contrib_table, color="CBD5E1")
+    set_table_borders(contrib_table, color="B0B0B0")
     
-    c_headers = ["Technical Domain", "Responsibilities & Deliverables", "Contribution"]
+    c_headers = ["Technical Domain", "Deliverables", "Contribution"]
     for j, h in enumerate(c_headers):
         c = contrib_table.rows[0].cells[j]
-        set_cell_shading(c, "1E293B")
-        set_cell_margins(c, top=60, bottom=60, left=100, right=100)
+        set_cell_shading(c, "EAEAEA")
+        set_cell_margins(c, top=40, bottom=40, left=60, right=60)
         p = c.paragraphs[0]
         r = p.add_run(h)
         r.bold = True
-        r.font.name = "Calibri"
+        r.font.name = "Times New Roman"
         r.font.size = Pt(9.5)
-        r.font.color.rgb = RGBColor(255, 255, 255)
+        r.font.color.rgb = BLACK
         
     contrib_rows = [
-        ("Smart Contract & Web3", "Wrote CertificateRegistry.sol, role permissions, Hardhat deploy scripts, and Ethers.js integration.", "100%"),
-        ("Frontend UI / UX", "Built Next.js 14 landing page, organization dashboard, live preview studio, and public verification portal.", "100%"),
-        ("Backend & Database", "Designed Prisma PostgreSQL schema, Next.js API routes, Zod input validation, and Supabase auth.", "100%"),
-        ("PDF & Email Services", "Built vector diploma generator with embedded QR codes and automated SMTP email notifications.", "100%"),
-        ("Testing & Documentation", "Wrote 52 automated tests, verified zero TypeScript errors, created SVG diagrams, and compiled documentation.", "100%"),
+        ("Smart Contract & Web3", "Wrote CertificateRegistry.sol, Hardhat deployment scripts, Ethers.js integration", "100%"),
+        ("Frontend Engineering", "Next.js 14 landing portal, dashboard, live preview studio, multi-modal scanner", "100%"),
+        ("Backend & Database", "Prisma PostgreSQL schema, Next.js API routes, Zod validation, PDF scan endpoint", "100%"),
+        ("Document & Email Services", "Vector diploma generation with embedded QR codes, automated SMTP dispatch", "100%"),
+        ("Quality Assurance", "52 automated tests, TypeScript strict compliance, diagrams, and project report", "100%"),
     ]
     
     c_widths = [Inches(1.8), Inches(3.7), Inches(1.0)]
     for i, row_data in enumerate(contrib_rows):
         row = contrib_table.rows[i+1]
-        bg = "F8FAFC" if i % 2 == 0 else "FFFFFF"
         for j, val in enumerate(row_data):
             c = row.cells[j]
             c.width = c_widths[j]
-            set_cell_shading(c, bg)
-            set_cell_margins(c, top=50, bottom=50, left=80, right=80)
+            set_cell_margins(c, top=40, bottom=40, left=60, right=60)
             p = c.paragraphs[0]
             p.paragraph_format.space_after = Pt(0)
             r = p.add_run(val)
-            r.font.name = "Calibri"
+            r.font.name = "Times New Roman"
             r.font.size = Pt(9.0)
-            r.font.color.rgb = DARK_GRAY if j == 0 else (BURGUNDY if j == 2 else BODY_COLOR)
+            r.font.color.rgb = DARK_TEXT
             if j == 0 or j == 2:
                 r.bold = True
 
-    doc.add_paragraph().paragraph_format.space_after = Pt(10)
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
-    # ----------------------------------------------------
-    # SECTION 11: DEMO PRESENTATION & WALKTHROUGH SCRIPT
-    # ----------------------------------------------------
-    add_section_heading("11", "Demo Video Walkthrough Script (5–7 Minutes)")
-    add_body("Below is the comprehensive spoken presentation script for the live system demonstration, structured to explain both user features and underlying blockchain mechanics in clear terms:")
-
-    script_scenes = [
-        ("Scene 1: Introduction & Problem Context", "0:00 – 0:45", "Homepage (/) / Architecture Diagram",
-         "Hello everyone, welcome to the demonstration of Citadel, a blockchain-based digital certificate issuing and verification platform. Traditional paper diplomas and static PDF certificates are easy to forge with modern graphics tools, and verifying them manually takes weeks of phone calls and emails. Citadel solves this by using the Ethereum blockchain to make certificates completely tamper-proof and instantly verifiable for anyone, anywhere, in seconds."),
+    # Demonstration Script Summary Table
+    add_sub_heading("7.1 Demonstration Video Outline (5–7 Minutes)")
+    add_body("The live video walkthrough demonstrates the platform's features and blockchain mechanics:")
+    
+    script_table = doc.add_table(rows=7, cols=3)
+    script_table.alignment = WD_TABLE_ALIGNMENT.CENTER
+    script_table.autofit = False
+    set_table_borders(script_table, color="B0B0B0")
+    
+    s_headers = ["Time", "Stage / Feature", "Demonstration Outline"]
+    for j, h in enumerate(s_headers):
+        c = script_table.rows[0].cells[j]
+        set_cell_shading(c, "EAEAEA")
+        set_cell_margins(c, top=40, bottom=40, left=60, right=60)
+        p = c.paragraphs[0]
+        r = p.add_run(h)
+        r.bold = True
+        r.font.name = "Times New Roman"
+        r.font.size = Pt(9.5)
+        r.font.color.rgb = BLACK
         
-        ("Scene 2: Organization Login & Dashboard Overview", "0:45 – 1:45", "Dashboard (/dashboard)",
-         "Here on our organization dashboard, an issuing school or academy has a complete overview of all credentials they have issued. You can see our 4 live stat cards showing Total Issued, Active Valid, Expired, and Revoked certificates, along with a recent credentials table. Behind the scenes, the school's account is authenticated securely, and all human-readable records are kept private in our PostgreSQL database to protect student privacy and save gas fees."),
-        
-        ("Scene 3: Issuing a Certificate in the Live Studio", "1:45 – 3:00", "Issue Studio (/dashboard/certificates/new)",
-         "Now let's issue a certificate. In our Issue Studio, as I type the student's name, degree title, and expiration date on the left, you can see the high-resolution diploma preview updating in real time on the right. When I click 'Issue Certificate', here is what happens: our server generates a unique Certificate ID and calculates a mathematical SHA-256 fingerprint of the data. Then, it sends this fingerprint to our Ethereum smart contract. The transaction is mined into a block, locking the certificate permanently. Even if someone changes a single letter in the name later, the hash will change, and the verification will immediately flag it as fake."),
-        
-        ("Scene 4: PDF Diploma Generation & Automated Email Delivery", "3:00 – 3:45", "Inbox / Downloaded PDF",
-         "Immediately after blockchain confirmation, Citadel generates a high-resolution vector PDF diploma with an embedded QR code linking directly to the verification page, and automatically emails it to the graduate's inbox. The student now holds an authentic digital credential they can print, share on LinkedIn, or email to employers."),
-        
-        ("Scene 5: Instant Public Verification (Camera, File & PDF)", "3:45 – 5:15", "Verification Portal (/verify) & Results (/verify/[id])",
-         "Now let's switch to the perspective of an employer or university verifier on our public verification page. Verifying is completely free — zero gas fees, and no account or wallet needed. A verifier can type the Certificate ID, use their device camera to scan the QR code live, drag and drop a screenshot, or drop the PDF file directly. When submitted, our system checks the cryptographic fingerprint against the smart contract. Instantly, we see the green 'Genuine & Valid' badge, showing the student's name, degree, and the exact Ethereum transaction hash and block number on Sepolia."),
-        
-        ("Scene 6: Credential Expiration & On-Chain Revocation", "5:15 – 6:00", "Certificate Registry & Revoked View",
-         "Citadel also gives schools full lifecycle control. If a credential expires, the smart contract dynamically marks it as Expired based on block timestamps. Furthermore, if a certificate was issued by mistake or must be cancelled, the authorized issuer can click 'Revoke' on the dashboard and enter an audit reason. The smart contract updates its state on-chain, and anyone checking that certificate will immediately see a prominent red 'Revoked' alert with the official cancellation reason."),
-        
-        ("Scene 7: Technical Summary & Conclusion", "6:00 – 6:45", "Conclusion / Architecture Slide",
-         "In summary, Citadel provides an end-to-end, enterprise-ready credentialing solution combining the privacy and speed of web applications with the permanent trust and immutability of the Ethereum blockchain. With 52 automated tests passing at 100%, Citadel is ready for institutional deployment. Thank you for watching!"),
+    script_data = [
+        ("0:00 - 0:45", "Introduction", "Overview of diploma fraud problem and Citadel's blockchain solution."),
+        ("0:45 - 1:45", "Dashboard", "Walkthrough of live metric cards, credential table, and off-chain storage model."),
+        ("1:45 - 3:00", "Issuing Studio", "Data entry, real-time diploma canvas rendering, and on-chain hash commitment."),
+        ("3:00 - 3:45", "Delivery", "Inspection of generated vector PDF diploma with embedded QR code and email delivery."),
+        ("3:45 - 5:15", "Verification", "Public zero-gas verification via camera scan, image drop, and PDF file upload."),
+        ("5:15 - 6:30", "Revocation & Summary", "On-chain revocation demonstration with audit reason and concluding remarks."),
     ]
+    
+    s_widths = [Inches(1.2), Inches(1.8), Inches(3.5)]
+    for i, row_data in enumerate(script_data):
+        row = script_table.rows[i+1]
+        for j, val in enumerate(row_data):
+            c = row.cells[j]
+            c.width = s_widths[j]
+            set_cell_margins(c, top=40, bottom=40, left=60, right=60)
+            p = c.paragraphs[0]
+            p.paragraph_format.space_after = Pt(0)
+            r = p.add_run(val)
+            r.font.name = "Times New Roman"
+            r.font.size = Pt(9.0)
+            r.font.color.rgb = DARK_TEXT
+            if j == 0:
+                r.bold = True
 
-    for title, duration, screen, script_text in script_scenes:
-        add_subheading(f"{title} ({duration})")
-        add_bullet(f" {screen}", "Screen / Action:")
-        add_body(f"\"{script_text}\"", "Spoken Script: ")
+    doc.add_paragraph().paragraph_format.space_after = Pt(6)
 
     # ----------------------------------------------------
-    # SECTION 12: CONCLUSION, ROADMAP & REFERENCES
+    # 8. CONCLUSION & FUTURE WORK
     # ----------------------------------------------------
-    add_section_heading("12", "Conclusion & Future Roadmap")
-    add_body("Citadel demonstrates a production-grade, mathematically tamper-proof solution to global credential fraud. By combining off-chain data efficiency with on-chain Ethereum cryptographic invariance, it provides institutions with effortless issuance and verifiers with instant zero-gas certainty.")
-    add_subheading("Future Roadmap:")
-    add_bullet(" Implementing W3C Decentralized Identifiers (DIDs) and Verifiable Credentials (VC) standards for cross-border institutional interoperability.", "1. Decentralized Identity (W3C DID):")
-    add_bullet(" Minting non-transferable ERC-5192 Soulbound Tokens directly into student wallets as decentralized proof of accomplishment.", "2. Soulbound Tokens (SBTs):")
-    add_bullet(" Utilizing zk-SNARKs to allow graduates to prove GPA thresholds or graduation status without revealing their full transcript or identity.", "3. Zero-Knowledge Proofs (ZKP):")
+    add_sec_heading("8. Conclusion and Future Work")
+    add_body("Citadel implements a production-grade, mathematically tamper-proof solution to credential forgery. By combining off-chain storage efficiency with Ethereum smart contract immutability, the platform achieves zero-gas public verification, automated delivery, and robust lifecycle governance.")
+    add_body("Future enhancements include integrating W3C Decentralized Identifiers (DIDs) for cross-border institutional interoperability, issuing non-transferable ERC-5192 Soulbound Tokens into student wallets, and utilizing zero-knowledge proofs (zk-SNARKs) for privacy-preserving attribute verification.")
 
     output_path = os.path.join(base_dir, "..", "PROJECT_SUBMISSION_REPORT.docx")
     doc.save(output_path)
-    print(f"Successfully generated refined Word document at: {output_path}")
+    print(f"Successfully generated formal academic Word document at: {output_path}")
 
 if __name__ == "__main__":
     build_document()
