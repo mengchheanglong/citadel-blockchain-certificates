@@ -1,45 +1,53 @@
 # CITADEL: A BLOCKCHAIN-BASED DIGITAL CERTIFICATE ISSUING AND VERIFICATION PLATFORM
-## Project Submission Report
+## Final Project Submission Report
 
-**Kirirom Institute of Technology**  
+**Kirirom Institute of Technology (KIT)**  
 *Department of Software Engineering*  
 *Author:* **Long Mengchheang**  
-*Course:* Individual Capstone Project (100% Contribution)  
+*Team Arrangement:* **Individual Project (100% Technical Contribution)**  
 *Date:* October 2026  
-*Repository:* [https://github.com/mengchheanglong/citadel-blockchain-certificates](https://github.com/mengchheanglong/citadel-blockchain-certificates)  
-*Demonstration Video:* Available on Google Drive / YouTube (Public Link)  
+*GitHub Repository:* [https://github.com/mengchheanglong/citadel-blockchain-certificates](https://github.com/mengchheanglong/citadel-blockchain-certificates)  
+*Public Demo Video:* Available on Google Drive / YouTube (Public Link)  
 
 ---
 
-### Abstract
-Traditional paper diplomas and static PDF certificates suffer from widespread forgery and require manual, time-consuming registrar inquiries for validation. Citadel is a decentralized web platform designed to eliminate credential fraud using the Ethereum blockchain. The platform adopts a hybrid architecture: student academic metadata is stored off-chain in a secure PostgreSQL database to protect privacy and optimize gas costs, while a canonical SHA-256 cryptographic hash of the credential is committed to an EVM smart contract (`CertificateRegistry.sol`). Public verifiers can authenticate credentials in seconds at zero gas cost via manual ID entry, camera QR scanning, image upload, or native PDF drag-and-drop. The system features a real-time diploma issuance studio, automated PDF generation, SMTP delivery, dynamic expiration evaluation, and on-chain revocation with audit logging. The implementation was verified with a 52-test automated unit and fuzz testing suite achieving a 100% pass rate.
+### Executive Summary
 
-*Keywords: Blockchain, Ethereum Smart Contracts, Digital Certificates, Cryptographic Hashing, Ethers.js, Next.js, Credential Verification.*
+Educational institutions and professional certifying organizations face growing challenges with document authenticity. Traditional paper diplomas and static PDF certificates can be easily copied, edited, or fabricated, making manual verification through registrars slow, costly, and error-prone.
 
----
+**Citadel** is a decentralized web application engineered to modernize credential issuing and verification using the Ethereum blockchain. The platform combines off-chain database efficiency with on-chain cryptographic immutability:
+1. **Mathematical Immutability:** Student academic records are hashed using a deterministic SHA-256 canonical hashing protocol. Only the 32-byte hash is recorded on an Ethereum smart contract (`CertificateRegistry.sol`), rendering forgery mathematically impossible.
+2. **Instant Zero-Gas Verification:** Public employers and verifiers can authenticate credentials in real time without needing cryptocurrency, Web3 wallets, or user accounts.
+3. **Automated Issuance & Delivery:** An interactive split-screen issuance studio renders vector diploma previews in real time, generates downloadable PDF certificates with embedded QR codes, and dispatches them automatically via SMTP email.
+4. **Lifecycle Governance:** Supports custom validity periods (Lifetime, 1 Year, 2 Years) and on-chain revocation with mandatory audit justification logging.
 
-## 1. Introduction and Problem Statement
-
-Academic and professional credentialing systems face critical challenges in maintaining document authenticity and operational trust:
-* **Credential Forgery:** Static PDF files and physical diplomas can be modified using desktop editing software or generative tools to alter student names, graduation dates, or honours without visual detection.
-* **Inefficient Verification:** Employers and university registrars rely on phone calls, postal mail, or manual email exchanges to verify records, averaging 2 to 4 weeks per inquiry.
-* **Centralized Data Risks:** Centralized academic databases represent single points of failure vulnerable to unauthorized tampering, data corruption, and administrative loss.
-
-Citadel addresses these vulnerabilities by establishing a tamper-proof, decentralized credential issuance and verification platform with four key design objectives:
-1. **Mathematical Immutability:** Commit cryptographic proofs to the Ethereum blockchain so that any modification to graduate records invalidates verification.
-2. **Zero-Gas Verification:** Allow employers and the public to verify any credential in real time without requiring blockchain wallets, tokens, or gas fees.
-3. **End-to-End Automation:** Provide an interactive split-screen issuance studio that updates a vector diploma preview in real time and automates PDF generation and email delivery.
-4. **Lifecycle Governance:** Support configurable validity periods (e.g. lifetime or 1-year licenses) and on-chain revocation with recorded audit justifications.
+The system was evaluated using an automated 52-test unit, integration, and fuzz testing suite, achieving a 100% pass rate.
 
 ---
 
-## 2. System Architecture and Operational Workflow
+## 1. System Overview
 
-Citadel is engineered across four functional layers to decouple user presentation, business logic, storage, and consensus verification:
-* **Presentation Layer:** Next.js 14 App Router, TypeScript, and Tailwind CSS. Provides an administrative operations portal and a clean public verification engine.
-* **Application Layer:** Server route handlers and Server Actions that enforce Zod schema validation, compute deterministic SHA-256 hashes, render vector diplomas with `jsPDF`, and manage `Nodemailer` SMTP notifications.
-* **Persistence Layer:** PostgreSQL managed through Prisma ORM 5.18. Stores recipient details, degree titles, and issuer profiles off-chain.
-* **Decentralized Ledger Layer:** Solidity 0.8.24 smart contract (`CertificateRegistry.sol`) deployed on the Ethereum EVM (Sepolia Testnet / Hardhat). Serves as the immutable registry for 32-byte credential hashes.
+### 1.1 The Credentialing Dilemma
+Educational institutions, training organizations, and academic licensing boards struggle to maintain trust with conventional credentials:
+* **Vulnerability to Forgery:** Static PDF certificates and scanned paper documents can easily be modified using graphic editing software or generative AI tools to alter recipient names, honors, and graduation dates without visual flaws.
+* **Operational Bottlenecks:** Employers and admissions offices must contact issuing registrars via phone or email for confirmation, typically taking two to four weeks per candidate.
+* **Centralized Database Vulnerabilities:** Centralized academic repositories represent single points of failure vulnerable to internal record tampering, data corruption, and administrative loss.
+
+### 1.2 The Citadel Platform Solution
+Citadel provides a web-based platform with the following core capabilities:
+* **Organization Portal:** Secure organization authentication, real-time certificate creation, automatic vector PDF diploma generation, blockchain recording on Ethereum Sepolia, and comprehensive issued certificate management.
+* **Certificate Verification:** Instant public verification via Certificate ID, camera QR scanning, image drop, or PDF document upload; comprehensive metadata display; on-chain transaction information; and clear status reporting: **Valid**, **Expired**, and **Revoked**.
+* **Enterprise Features:** Blockchain smart contract integration, automated email notification to recipients with PDF attachments, dynamic expiration management, and on-chain revocation.
+
+---
+
+## 2. System Architecture
+
+Citadel utilizes a clean four-tier architectural model that decouples presentation, business logic, storage, and consensus verification:
+* **1. Presentation Layer (Frontend):** Built with Next.js 14 App Router, TypeScript, and Tailwind CSS with Radix UI primitives. Delivers an administrative operations dashboard and a responsive public verification engine.
+* **2. Application & API Layer (Backend):** Next.js Server Route Handlers and Server Actions. Enforces strict Zod schema validation, computes deterministic SHA-256 digests, generates vector diplomas using `jsPDF`, and coordinates SMTP dispatch via `Nodemailer`.
+* **3. Persistence Layer (Database):** PostgreSQL managed through Prisma ORM 5.18. Stores recipient metadata, degree titles, and institution profiles off-chain to maintain GDPR/FERPA compliance and optimize gas efficiency.
+* **4. Decentralized Ledger Layer (Blockchain):** Solidity 0.8.24 smart contract (`CertificateRegistry.sol`) deployed on the Ethereum EVM (Sepolia Testnet / Hardhat). Serves as the immutable registry for 32-byte credential hashes.
 
 ```mermaid
 flowchart TD
@@ -49,44 +57,57 @@ flowchart TD
 ```
 *(Figure 1: Citadel four-tier system architecture model — `docs/screenshots/diagram_architecture.png`)*
 
-### 2.1 End-to-End Credential Lifecycle
-The platform coordinates two primary workflows: the Issuance Pipeline and the Verification Pipeline:
-* **Stage 1 (Issuance Pipeline):** The accredited institution inputs student information in the Issue Studio. The server computes a canonical SHA-256 digest and records it on Ethereum via Ethers.js v6. A vector PDF diploma with an embedded QR code is generated and dispatched via email.
-* **Stage 2 (Verification Pipeline):** An employer or verifier enters the Certificate ID or scans the QR code on `/verify`. The system retrieves the record, recomputes the hash, queries the smart contract via a zero-gas view function, and displays an official verification badge.
+---
 
-*(Figure 2: End-to-end credential lifecycle — `docs/screenshots/diagram_how_it_works.png`)*
+## 3. User Flow / System Flow
+
+The platform coordinates two primary workflows: the Organization Issuance Pipeline and the Public Verification Pipeline:
+
+### 3.1 Organization Issuance Flow
+1. The institution administrator logs into the Organization Portal.
+2. The user enters student and course details in the Issue Studio while a live canvas renders the diploma preview in real time.
+3. Upon clicking "Issue Certificate", the backend sorts object keys lexicographically and computes a canonical SHA-256 hash.
+4. The server invokes `issueCertificate` on the `CertificateRegistry` smart contract via Ethers.js v6.
+5. The transaction receipt (Tx Hash, Block Number) is recorded alongside certificate metadata in PostgreSQL.
+6. A vector PDF diploma with an embedded verification QR code is generated and emailed to the graduate via SMTP.
+
+### 3.2 Public Verification Flow
+1. An employer or verifier visits `/verify` without requiring an account or Web3 wallet.
+2. The user submits the credential via manual Certificate ID entry, live camera QR scanning, QR image upload, or direct PDF document drag-and-drop.
+3. The system queries the PostgreSQL database for off-chain metadata and recomputes the canonical hash.
+4. The system executes a zero-gas view call (`verifyCertificate`) on the Ethereum smart contract.
+5. The portal renders an official verification badge displaying the status (**Valid**, **Expired**, or **Revoked**), issuer details, and on-chain transaction information.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor Admin as Organization Admin
+    actor Verifier as Public Verifier / Employer
+    participant UI as Citadel Web App
+    participant DB as PostgreSQL (Prisma)
+    participant SC as Ethereum Smart Contract
+    actor Student as Student / Recipient
+
+    Admin->>UI: Input graduate info & select validity
+    UI->>UI: Compute Canonical SHA-256 Hash
+    UI->>SC: issueCertificate(certIdHash, certHash, expiry)
+    SC-->>UI: Confirm Tx Hash & Block Number
+    UI->>DB: Store metadata & Tx confirmation
+    UI->>Student: Dispatch Email with PDF Diploma & QR
+    
+    Verifier->>UI: Scan QR / Drop PDF / Enter ID
+    UI->>DB: Query metadata & recompute SHA-256
+    UI->>SC: verifyCertificate(certIdHash, certHash) [Zero Gas]
+    SC-->>UI: Return Status (Valid / Expired / Revoked)
+    UI->>Verifier: Render Cryptographic Proof Badge & Tx Link
+```
+*(Figure 2: End-to-end operational lifecycle sequence diagram — `docs/screenshots/diagram_user_flow.png`)*
 
 ---
 
-## 3. Blockchain and Cryptographic Mechanism
+## 4. Database Design (ER Diagram)
 
-### 3.1 Hybrid Storage Architecture
-Storing complete documents directly on Ethereum incurs high gas costs and violates privacy regulations (GDPR/FERPA), which prohibit permanent on-chain storage of personal identities. Citadel resolves this by storing metadata in PostgreSQL while anchoring only a 32-byte hash on-chain.
-
-### 3.2 Deterministic Canonical Hashing Protocol
-To eliminate JSON key-ordering discrepancies across different platforms, Citadel sorts object keys lexicographically before computing the cryptographic digest:
-
-$$\text{Canonical Payload} = \text{JSON.stringify}(\text{sortKeys}(\{\text{certId}, \text{recipientName}, \text{courseName}, \text{issueDate}, \text{organizationId}\}))$$
-
-$$\text{certHash} = \text{SHA-256}(\text{Canonical Payload})$$
-
-$$\text{certIdHash} = \text{keccak256}(\text{certId})$$
-
-Due to the avalanche effect of SHA-256, changing even a single byte in the graduate's name or course title produces a completely different hash, immediately causing on-chain verification to fail.
-
-### 3.3 Smart Contract Implementation (`CertificateRegistry.sol`)
-The `CertificateRegistry` contract maintains state transitions for each credential across five distinct statuses:
-* **Valid (1):** Credential exists on-chain, hash matches, and `block.timestamp` is before `expirationDate`.
-* **Expired (2):** Credential is authentic, but the validity window has elapsed.
-* **Revoked (3):** Formally invalidated by the issuer with a mandatory recorded audit reason.
-* **HashMismatch (4):** Certificate ID exists, but the supplied data produces a mismatched hash.
-* **NotFound (0):** Certificate ID has never been registered on-chain.
-
----
-
-## 4. Database Design and Data Model
-
-The off-chain relational database organizes information across three primary entities:
+To protect student privacy and avoid unnecessary gas fees, detailed textual information is stored off-chain in PostgreSQL, with relational foreign keys connecting to on-chain transaction records:
 
 ```mermaid
 erDiagram
@@ -130,53 +151,134 @@ erDiagram
 ```
 *(Figure 3: Entity-Relationship model — `docs/screenshots/diagram_er.png`)*
 
-### Data Dictionary
-| Table | Key Attributes & Constraints | Description |
+### 4.1 Data Dictionary
+| Table | Key Attributes & Constraints | Architectural Purpose |
 |---|---|---|
-| **Organization** | `id` (PK UUID), `name`, `email` (UK), `website`, `description`, `createdAt` | Stores verified institution profile and issuer accounts. |
-| **Certificate** | `id` (PK UUID), `certificateId` (UK), `recipientName`, `recipientEmail`, `courseName`, `issueDate`, `expiryDate`, `status`, `certHash`, `organizationId` (FK) | Maintains academic records, expiration timestamps, and canonical SHA-256 digests. |
+| **Organization** | `id` (PK UUID), `name`, `email` (UK), `website`, `description`, `createdAt` | Stores verified institution profiles and issuer authentication credentials. |
+| **Certificate** | `id` (PK UUID), `certificateId` (UK), `recipientName`, `recipientEmail`, `courseName`, `issueDate`, `expiryDate`, `status`, `certHash`, `organizationId` (FK) | Maintains student academic records, expiration timestamps, and canonical SHA-256 digests. |
 | **BlockchainTransaction** | `id` (PK UUID), `certificateId` (FK), `txHash` (UK), `blockNumber`, `networkName`, `contractAddress`, `action`, `timestamp`, `confirmed` | Audit log of on-chain Ethereum transaction receipts and block confirmations. |
 
 ---
 
-## 5. Core System Implementation and User Interface
+## 5. Blockchain Architecture
 
-### 5.1 Real-Time Issuance Studio
-The Issue Studio provides an administrative interface where entered graduate metadata renders onto an SVG/canvas diploma in real time. Upon submission, the record is hashed, committed to Ethereum, and dispatched as a PDF via email.  
-*(Figure 4: Split-screen Issue Studio — `docs/screenshots/05_issue_studio_live_preview.png`)*
+### 5.1 Hybrid Storage Architecture
+Storing complete academic records and personal identities directly on the Ethereum blockchain is cost-prohibitive and violates privacy frameworks such as GDPR (Right to be Forgotten) and FERPA. Citadel solves this by storing metadata in PostgreSQL while anchoring only a 32-byte cryptographic hash on-chain.
 
-### 5.2 Multi-Modal Verification Engine
-To support diverse devices, Citadel implements a multi-modal verification engine on `/verify`:
-1. **Live Camera Stream:** Uses the low-level `Html5Qrcode` controller to stream video directly into a viewfinder frame with corner reticles and mobile camera switching.
-2. **Multi-Pass `jsQR` Image Decoder:** Employs a multi-pass canvas decoder with `jsQR` that evaluates native image dimensions, bottom corner quadrants, and upscales small crops.
-3. **PDF Document Ingestion:** Allows verifiers to drag and drop certificate PDF documents directly. The system extracts certificate identifiers from binary text streams and decompresses PDF layers via `/api/verify/scan-file`.
+### 5.2 Deterministic Canonical Hashing Protocol
+To eliminate JSON key-ordering discrepancies across different programming platforms, Citadel sorts object keys lexicographically before computing the cryptographic digest:
 
-*(Figure 5: Public verification portal — `docs/screenshots/07_public_verify_portal.png`)*  
-*(Figure 6: Cryptographic proof result — `docs/screenshots/08_verification_result_valid.png`)*
+$$\text{Canonical Payload} = \text{JSON.stringify}(\text{sortKeys}(\{\text{certId}, \text{recipientName}, \text{courseName}, \text{issueDate}, \text{organizationId}\}))$$
+
+$$\text{certHash} = \text{SHA-256}(\text{Canonical Payload})$$
+
+$$\text{certIdHash} = \text{keccak256}(\text{certId})$$
+
+Due to the avalanche effect of SHA-256, changing even a single byte in the graduate's name or course title produces a completely different hash, immediately causing on-chain verification to fail.
 
 ---
 
-## 6. Testing, Evaluation and Results
+## 6. Smart Contract Design
 
-The system was validated using a comprehensive 52-test automated suite executed through Hardhat and Playwright:
-* **Cryptographic Hashing Tests (12 Tests):** Validated deterministic sorting, whitespace resilience, and cross-platform key invariance.
-* **Smart Contract Functional Tests (28 Tests):** Verified deployment, access control modifiers, uniqueness enforcement, verification logic, and revocation events.
-* **Fuzz and Edge Case Tests (12 Tests):** Evaluated single-bit hash alterations, extreme future dates (50+ years), timestamp boundary conditions, and concurrent issuance.
+The `CertificateRegistry.sol` smart contract is written in Solidity 0.8.24 and compiled with Hardhat.
+
+### 6.1 State Machine Lifecycle
+The smart contract maintains state transitions for each credential across five distinct statuses:
+* **Valid (1):** Credential exists on-chain, hash matches, and `block.timestamp` is before `expirationDate`.
+* **Expired (2):** Credential is authentic, but the validity window has elapsed.
+* **Revoked (3):** Formally invalidated by the issuer with a mandatory recorded audit reason.
+* **HashMismatch (4):** Certificate ID exists, but the supplied data produces a mismatched hash.
+* **NotFound (0):** Certificate ID has never been registered on-chain.
+
+```mermaid
+stateDiagram-v2
+    [*] --> NotFound: Certificate Not Issued
+    NotFound --> Valid: issueCertificate() [Hash Committed]
+    Valid --> Expired: block.timestamp >= expirationDate
+    Valid --> Revoked: revokeCertificate() [Audit Reason Recorded]
+    Expired --> Revoked: revokeCertificate()
+    Valid --> HashMismatch: verifyCertificate() [Tampered Data]
+```
+*(Figure 4: Smart contract state machine lifecycle — `docs/screenshots/diagram_smart_contract.png`)*
+
+### 6.2 Key Smart Contract Functions
+* `issueCertificate(bytes32 certIdHash, bytes32 certHash, uint256 expirationDate)`: Enforces authorized issuer role, checks that the ID has not been used, verifies future expiry, and commits the certificate to the blockchain. Emits `CertificateIssued`.
+* `verifyCertificate(bytes32 certIdHash, bytes32 certHash)`: Free view function (zero gas). Compares the presented hash against the on-chain ledger and dynamically computes expiration.
+* `revokeCertificate(bytes32 certIdHash, string reason)`: Only the original issuing institution or contract administrator can revoke an active certificate. Emits `CertificateRevoked`.
+* `getCertificate(bytes32 certIdHash)`: Returns raw certificate struct data including issuer address, issuance timestamp, expiration date, revocation status, and audit reason.
+
+---
+
+## 7. User Interface Design or Screenshots
+
+The system provides intuitive, responsive interfaces for both institutional administrators and public verifiers.
+
+### 7.1 Organization Portal
+* **Organization Login:** Secure authentication with credentials validation and protected session routing.
+* **Create & Issue Certificates:** Interactive split-screen studio where entered data renders a vector diploma canvas in real time.
+* **Generate Downloadable PDF Diplomas:** Automatic vector PDF creation with embedded verification QR code and SMTP email dispatch.
+* **Record on Blockchain:** Real-time transaction confirmations with Tx Hash and Block Number on Ethereum Sepolia.
+* **View Issued Certificates:** Comprehensive registry table with status filters (All, Valid, Expired, Revoked) and CSV audit export.
+
+*(Figure 5: Organization Executive Dashboard — `docs/screenshots/04_dashboard_overview.png`)*  
+*(Figure 6: Split-screen Issue Studio with live diploma rendering — `docs/screenshots/05_issue_studio_live_preview.png`)*  
+*(Figure 7: Certificate Registry table with status filter tabs — `docs/screenshots/06_certificate_registry.png`)*
+
+### 7.2 Certificate Verification Portal
+* **Multi-Modal Verification:** Public users can verify via Certificate ID, live camera QR scanning, image drop, or PDF upload.
+* **View Certificate Information:** Displays student name, degree title, issue date, and issuing accredited institution.
+* **View Blockchain Transaction Information:** Displays transaction hash, block number, contract address, and Etherscan link.
+* **Display Certificate Status:** Evaluates state across all three required statuses: **Valid** (Green), **Expired** (Yellow), and **Revoked** (Red).
+
+*(Figure 8: Public verification portal supporting multiple input modes — `docs/screenshots/07_public_verify_portal.png`)*  
+*(Figure 9: Valid cryptographic proof result with Ethereum transaction link — `docs/screenshots/08_verification_result_valid.png`)*  
+*(Figure 10: Revoked certificate result with recorded issuer audit reason — `docs/screenshots/09_verification_result_revoked.png`)*
+
+---
+
+## 8. Implementation Summary
+
+### 8.1 Technology Stack
+* **Frontend:** Next.js 14.2 App Router, TypeScript, Tailwind CSS, Radix UI Primitives, Lucide Icons.
+* **Backend:** Node.js 20+, Next.js Server Actions & API Routes, Zod schema validation.
+* **Database:** PostgreSQL (Supabase), Prisma ORM 5.18.0.
+* **Blockchain:** Solidity 0.8.24, Hardhat 2.22.6, Ethers.js v6.13.1 (Sepolia Testnet / Hardhat EVM).
+* **Document & Email:** jsPDF 2.5.1 (vector diplomas), Nodemailer 6.9.14 (SMTP notifications).
+* **Scanner:** Html5Qrcode camera controller, jsQR multi-pass canvas engine, Node zlib decompression.
+
+### 8.2 Automated Test Suite Results
+The implementation was validated using a 52-test automated unit, integration, and fuzz testing suite:
 
 | Test Category | Scope and Assertions | Result |
 |---|---|:---:|
-| **Cryptographic Unit Tests** | Canonical sorting, SHA-256 consistency, keystore validation | 12 / 12 Passed (100%) |
+| **Cryptographic Unit Tests** | Canonical sorting, SHA-256 consistency, key-order invariance | 12 / 12 Passed (100%) |
 | **Smart Contract Tests** | CertificateRegistry deployment, issuance, zero-gas verify, revoke | 28 / 28 Passed (100%) |
 | **Fuzz & Edge Tests** | 1-bit hash tampering, boundary timestamps, high-volume stress | 12 / 12 Passed (100%) |
 | **TypeScript Static Check** | Strict compiler type-checking (`npx tsc --noEmit`) | 0 Errors (100% Valid) |
 
+### 8.3 Features Beyond Minimum Requirements
+1. **Interactive Split-Screen Studio:** Vector diploma canvas updates in real time as the administrator types.
+2. **Multi-Modal Verification Engine:** Supports camera video feed, drag-and-drop QR images, and PDF document drops with binary stream parsing.
+3. **Audit Data Export:** Client-side CSV spreadsheet export for institutional record auditing.
+4. **Automated Email Dispatch:** Seamless SMTP delivery with attached vector PDF diplomas.
+
 ---
 
-## 7. Project Deliverables and Contribution
+## 9. Public GitHub Repository Link
 
-This project was conducted as an individual capstone project by **Long Mengchheang**. All architectural planning, implementation, smart contracts, frontend, backend, and testing were performed independently:
+The complete project codebase, smart contract source code, database migrations, automated tests, and documentation are publicly available on GitHub:
 
-| Technical Domain | Deliverables | Contribution |
+**Repository URL:** [https://github.com/mengchheanglong/citadel-blockchain-certificates](https://github.com/mengchheanglong/citadel-blockchain-certificates)  
+*Branch:* `main`  
+*Status:* Up to date with all 52 tests, smart contracts, and documentation.
+
+---
+
+## 10. Individual Contribution Report
+
+This project was conducted as an **Individual Capstone Project** by **Long Mengchheang**. 100% of all technical planning, architecture, design, and implementation work was performed independently:
+
+| Technical Domain | Responsibilities & Deliverables | Contribution |
 |---|---|:---:|
 | **Smart Contract & Web3** | Wrote `CertificateRegistry.sol`, Hardhat deployment scripts, Ethers.js integration | **100%** |
 | **Frontend Engineering** | Next.js 14 landing portal, dashboard, live preview studio, multi-modal scanner | **100%** |
@@ -184,20 +286,22 @@ This project was conducted as an individual capstone project by **Long Mengchhea
 | **Document & Email Services** | Vector diploma generation with embedded QR codes, automated SMTP dispatch | **100%** |
 | **Quality Assurance** | 52 automated tests, TypeScript strict compliance, diagrams, and project report | **100%** |
 
-### 7.1 Demonstration Video Outline (5–7 Minutes)
+---
+
+## 11. Public Demo Video Link
+
+A comprehensive demonstration video walking through the full lifecycle of the platform is accessible publicly:
+
+**Public Demonstration Video URL:** [https://drive.google.com/drive/folders/1...](https://drive.google.com) *(or YouTube Public Link)*  
+*Access Permission:* Public / Anyone with the link can view  
+*Duration:* Approximately 5 to 7 minutes  
+
+### 11.1 Demonstration Video Walkthrough Outline
 | Time | Stage / Feature | Demonstration Outline |
 |---|---|---|
-| **0:00 - 0:45** | Introduction | Overview of diploma fraud problem and Citadel's blockchain solution. |
+| **0:00 - 0:45** | Introduction | Overview of credential forgery problem and Citadel's blockchain solution. |
 | **0:45 - 1:45** | Dashboard | Walkthrough of live metric cards, credential table, and off-chain storage model. |
 | **1:45 - 3:00** | Issuing Studio | Data entry, real-time diploma canvas rendering, and on-chain hash commitment. |
 | **3:00 - 3:45** | Delivery | Inspection of generated vector PDF diploma with embedded QR code and email delivery. |
 | **3:45 - 5:15** | Verification | Public zero-gas verification via camera scan, image drop, and PDF file upload. |
 | **5:15 - 6:30** | Revocation & Summary | On-chain revocation demonstration with audit reason and concluding remarks. |
-
----
-
-## 8. Conclusion and Future Work
-
-Citadel implements a production-grade, mathematically tamper-proof solution to credential forgery. By combining off-chain storage efficiency with Ethereum smart contract immutability, the platform achieves zero-gas public verification, automated delivery, and robust lifecycle governance.
-
-Future enhancements include integrating W3C Decentralized Identifiers (DIDs) for cross-border institutional interoperability, issuing non-transferable ERC-5192 Soulbound Tokens into student wallets, and utilizing zero-knowledge proofs (zk-SNARKs) for privacy-preserving attribute verification.
