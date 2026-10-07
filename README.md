@@ -9,7 +9,7 @@
 </p>
 
 <p align="center">
-  <em>A full-stack Web3 credential management system pairing Ethereum smart contracts with hybrid off-chain storage to guarantee cryptographic tamper-proofing, instant public verification, and compliance with data privacy standards.</em>
+  <em>An enterprise Web3 credential management system pairing Ethereum smart contracts with hybrid off-chain storage to guarantee cryptographic tamper-proofing, instant public verification, and compliance with data privacy standards.</em>
 </p>
 
 <p align="center">
@@ -25,13 +25,19 @@
   <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="License MIT" />
 </p>
 
+> 📌 **GitHub Repository Description:**  
+> **Immutable blockchain-based digital certificate issuing & zero-gas verification platform built with Next.js 14, Solidity, Hardhat, Ethers.js v6, and PostgreSQL.**
+>
+> 🏷️ **Suggested Repository Topics:**  
+> `blockchain` • `ethereum` • `solidity` • `smart-contracts` • `nextjs` • `typescript` • `hardhat` • `ethers-js` • `prisma` • `postgresql` • `digital-credentials` • `academic-integrity` • `web3` • `zero-gas`
+
 ---
 
 ## 📑 Table of Contents
 
 - [Executive Summary](#-executive-summary)
 - [The Problem vs. The Citadel Solution](#-the-problem-vs-the-citadel-solution)
-- [Key Features & Innovations](#-key-features--innovations)
+- [Key Features & Capabilities](#-key-features--capabilities)
 - [System Architecture](#-system-architecture)
   - [Four-Tier System Model](#four-tier-system-model)
   - [Hybrid On-Chain / Off-Chain Philosophy](#hybrid-on-chain--off-chain-philosophy)
@@ -46,15 +52,15 @@
 - [Testing & Quality Assurance](#-testing--quality-assurance)
 - [Getting Started & Local Setup](#-getting-started--local-setup)
 - [Engineering Highlights & Interview Talking Points](#-engineering-highlights--interview-talking-points)
-- [Author & Contact](#-author--contact)
+- [License](#-license)
 
 ---
 
 ## 💡 Executive Summary
 
-**Citadel** is an enterprise-grade digital credential issuing and verification platform designed for universities, academic institutions, and certification authorities. By combining an **Ethereum smart contract** ledger with an **off-chain PostgreSQL database**, Citadel eliminates academic diploma fraud, enables instantaneous cross-border verification without transaction fees ("zero-gas"), and automates document rendering and email delivery.
+**Citadel** is an enterprise-grade digital credential issuing and verification platform designed for universities, educational institutions, training academies, and enterprise certification authorities. By combining an **Ethereum smart contract** ledger with an **off-chain PostgreSQL database**, Citadel eliminates credential fraud, enables instantaneous cross-border verification without transaction fees ("zero-gas"), and automates document rendering and email delivery.
 
-Citadel guarantees **mathematical tamper-resistance**: modifying even a single character of a student’s name, graduation date, or degree title produces a completely different cryptographic digest, instantly failing on-chain verification.
+Citadel guarantees **mathematical tamper-resistance**: modifying even a single character of a recipient’s name, issue date, or credential title produces a completely different cryptographic digest, immediately failing on-chain verification.
 
 ---
 
@@ -69,22 +75,22 @@ Citadel guarantees **mathematical tamper-resistance**: modifying even a single c
 
 ---
 
-## 🌟 Key Features & Innovations
+## 🌟 Key Features & Capabilities
 
 ### 🏛️ For Accredited Organizations
-- **Interactive Live Issue Studio:** Split-screen interface featuring a live vector diploma preview that updates in real time as administrators enter graduate data.
-- **Automated High-Resolution PDF Diplomas:** Instant client- and server-side PDF generation via `jsPDF` with crisp typography, institution metadata, and high-density QR verification codes.
-- **Automated SMTP Dispatch:** Dispatches newly issued diplomas directly to graduate inboxes with direct verification hyperlinks.
-- **Lifecycle Governance:** Configure lifetime validity or fixed expiry dates (1 Year, 2 Years, Custom), with on-chain revocation management with audit justification logs.
+- **Interactive Live Issue Studio:** Split-screen interface featuring a live vector certificate preview that updates in real time as administrators enter recipient and course data.
+- **Automated High-Resolution PDF Diplomas:** Instant client- and server-side PDF generation via `jsPDF` with crisp typography, institution branding, and high-density QR verification codes.
+- **Automated SMTP Dispatch:** Dispatches newly issued credentials directly to recipient inboxes with direct verification hyperlinks.
+- **Lifecycle Governance:** Configure lifetime validity or fixed expiry dates (1 Year, 2 Years, Custom), with on-chain revocation management and audit justification logs.
 - **Institutional Management & Audit Export:** Sort, search, and filter issued certificates by lifecycle status (`All`, `Valid`, `Expired`, `Revoked`), and export institutional records to CSV with one click.
 
 ### 🔍 For Verifiers (Employers, Universities, Recruiters)
 - **Multi-Modal Verification Engine:**
-  - 📷 **Live Camera Scanner:** Scans diploma QR codes in real-time directly through device cameras.
-  - 🖼️ **Image Drag & Drop:** Upload diploma screenshots or photos for client-side QR decoding (`jsQR`).
+  - 📷 **Live Camera Scanner:** Scans certificate QR codes in real-time directly through device cameras.
+  - 🖼️ **Image Drag & Drop:** Upload certificate screenshots or photos for client-side QR decoding (`jsQR`).
   - 📄 **Direct PDF Document Inspection:** Automatically extracts embedded QR codes and validates hash integrity from uploaded PDF certificates.
   - ⌨️ **Manual Certificate ID Search:** Standard search for rapid ID lookups (`CERT-YYYY-XXXXX`).
-- **Comprehensive Cryptographic Proof Modal:** Displays graduate metadata, issuance timestamp, expiration status, raw SHA-256 digest, Ethereum block number, transaction hash, and direct Etherscan link.
+- **Comprehensive Cryptographic Proof Modal:** Displays recipient metadata, issuance timestamp, expiration status, raw SHA-256 digest, Ethereum block number, transaction hash, and direct Etherscan link.
 
 ---
 
@@ -121,11 +127,11 @@ Citadel uses a decoupled **four-tier architecture** that separates user experien
 ```
 
 ### Hybrid On-Chain / Off-Chain Philosophy
-Storing extensive textual descriptions, student identifiers, and image assets on Ethereum creates two major engineering problems:
-1. **Excessive Gas Overhead:** Storing 1 KB of arbitrary data on Ethereum mainnet/testnet is cost-prohibitive.
+Storing extensive textual descriptions, recipient identifiers, and document assets directly on Ethereum creates two major engineering challenges:
+1. **Excessive Gas Overhead:** Storing arbitrary textual records on Ethereum is cost-prohibitive.
 2. **Data Privacy Regulations (GDPR & FERPA):** Public blockchains are immutable; personally identifiable information (PII) can never be deleted or updated to comply with the *Right to be Forgotten*.
 
-**Citadel's Solution:** Metadata and PII are preserved off-chain in encrypted PostgreSQL tables. Only a deterministic **32-byte cryptographic hash** (`certHash`) and its unique identifier hash (`certIdHash`) are committed to Ethereum.
+**Citadel's Solution:** Recipient records and PII are preserved off-chain in encrypted PostgreSQL tables. Only a deterministic **32-byte cryptographic hash** (`certHash`) and its unique identifier hash (`certIdHash`) are committed to Ethereum.
 
 ### Deterministic Canonical Hashing Protocol
 To ensure cross-platform hash consistency regardless of JSON property serialization order, Citadel implements a canonical sorting protocol prior to SHA-256 hashing:
@@ -164,11 +170,11 @@ The system coordinates two core end-to-end pipelines: the **Issuance Pipeline** 
 </p>
 
 1. **Issuance Stage:**
-   - Institution submits student details through the Issue Studio.
+   - Issuing organization submits recipient and certification details through the Issue Studio.
    - Server validates payload schema using Zod, constructs the canonical JSON payload, and generates a SHA-256 digest.
    - An authorized operator wallet sends `issueCertificate(certIdHash, certHash, expirationDate)` to the smart contract.
    - Upon transaction receipt confirmation, certificate records and block metrics (`txHash`, `blockNumber`, `gasUsed`) are saved in PostgreSQL.
-   - jsPDF renders the official diploma with the embedded verification QR code, which Nodemailer emails to the graduate.
+   - jsPDF renders the official diploma with the embedded verification QR code, which Nodemailer emails to the recipient.
 2. **Verification Stage:**
    - Verifier uploads a diploma or scans its QR code at `/verify`.
    - The server resolves the certificate record from the database and recomputes the canonical SHA-256 hash.
@@ -245,8 +251,8 @@ Managed via **Prisma ORM 5.18**, the relational schema cleanly connects institut
 
 ## 🖥️ Visual Interface Showcase
 
-### 1. Interactive Issue Studio (Live Vector Diploma Preview)
-*Administrators input graduate information and view immediate vector canvas rendering prior to on-chain minting.*
+### 1. Interactive Issue Studio (Live Vector Certificate Preview)
+*Administrators input recipient information and view immediate vector canvas rendering prior to on-chain minting.*
 <p align="center">
   <img src="docs/screenshots/05_issue_studio_live_preview.png" alt="Issue Studio Live Preview" width="90%" />
 </p>
@@ -414,15 +420,6 @@ When presenting Citadel in technical interviews, consider discussing these core 
 
 5. **Contract Lifecycle State Machine:**
    Explain the 5-status verification state machine (`NotFound`, `Valid`, `Expired`, `Revoked`, `HashMismatch`) and why status priority rules evaluate `Revoked` before `Expired`.
-
----
-
-## 👨‍💻 Author & Contact
-
-**Long Mengchheang**  
-Department of Software Engineering, Kirirom Institute of Technology (KIT)  
-- **GitHub:** [@mengchheanglong](https://github.com/mengchheanglong)  
-- **Repository:** [citadel-blockchain-certificates](https://github.com/mengchheanglong/citadel-blockchain-certificates)
 
 ---
 
