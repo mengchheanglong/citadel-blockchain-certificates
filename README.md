@@ -32,30 +32,51 @@
 
 ---
 
-## 📸 Product Showcase
-
-| Issue Studio (Live Preview) | Executive Dashboard |
-| :---: | :---: |
-| ![Issue Studio](docs/screenshots/05_issue_studio_live_preview.png) | ![Dashboard](docs/screenshots/04_dashboard_overview.png) |
-
-| Multi-Modal Verification Portal | Instant Cryptographic Proof |
-| :---: | :---: |
-| ![Verification Portal](docs/screenshots/07_public_verify_portal.png) | ![Valid Result](docs/screenshots/08_verification_result_valid.png) |
-
----
-
 ## 🏗️ Architecture
 
-Citadel uses a **hybrid on-chain / off-chain model** for speed, low gas costs, and regulatory compliance:
+Citadel uses a **hybrid on-chain / off-chain architecture** to optimize for privacy, performance, and minimal gas costs:
 
-<p align="center">
-  <img src="docs/screenshots/diagram_architecture.png" alt="System Architecture" width="85%" />
-</p>
+```mermaid
+flowchart TD
+    subgraph Client["1. Presentation Tier (Client)"]
+        UI_Issue["🏢 Organization Issue Studio<br/>(Split-Screen Live Vector Preview)"]
+        UI_Verify["🔍 Public Verification Portal<br/>(Camera QR • Drag & Drop • PDF Drop)"]
+    end
 
-1. **Frontend:** Next.js 14 (App Router), TypeScript, Tailwind CSS, shadcn/ui.
-2. **Backend API:** Next.js Server Route Handlers, Zod validation, `jsPDF`, `nodemailer`.
-3. **Database:** PostgreSQL via Prisma ORM (stores institution metadata and audit logs).
-4. **Blockchain:** Solidity `CertificateRegistry.sol` on Ethereum Sepolia / Hardhat local node.
+    subgraph App["2. Application Tier (Next.js 14 App Router)"]
+        API["API Route Handlers & Server Actions<br/>(Session Auth & Zod Sanitization)"]
+        Hash["Deterministic Canonical Hashing<br/>(Lexicographical Sort + SHA-256)"]
+        Doc["Document & Delivery Services<br/>(jsPDF Engine + Nodemailer SMTP)"]
+    end
+
+    subgraph Data["3. Persistence Tier"]
+        DB[("PostgreSQL Database<br/>(Prisma ORM)")]
+        DB_Desc["• Organization Profiles<br/>• Full Certificate Metadata<br/>• Transaction Receipts & Logs"]
+    end
+
+    subgraph Chain["4. Blockchain Ledger Tier (Ethereum EVM)"]
+        Contract["CertificateRegistry.sol<br/>(Solidity ^0.8.24)"]
+        Contract_Desc["• 32-Byte certHash Anchor<br/>• 5-State Verification Engine<br/>• Zero-Gas View Queries"]
+    end
+
+    UI_Issue -->|Form Submission| API
+    UI_Verify -->|Zero-Gas Query| API
+    API --> Hash
+    API --> Doc
+    API -->|Off-Chain PII & Records| DB
+    DB --- DB_Desc
+    Hash -->|issueCertificate / Gas Tx| Contract
+    API -.->|eth_call / Free View Query| Contract
+    Contract --- Contract_Desc
+```
+
+### Key Architectural Decisions
+
+| Design Decision | Implementation | Engineering Rationale |
+| :--- | :--- | :--- |
+| **Hybrid Storage Model** | PostgreSQL (Metadata) + Ethereum (Hashes) | Ensures compliance with **GDPR** (Right to be Forgotten) and **FERPA** while keeping gas costs negligible. |
+| **Deterministic Hashing** | Lexicographical Key Sorting + SHA-256 | Prevents hash mismatches caused by varying JSON key-order serialization across runtimes. |
+| **Zero-Gas Verification** | EVM `view` Function (`verifyCertificate`) | Verifiers (employers, recruiters) can authenticate credentials in milliseconds without crypto wallets or gas fees. |
 
 ---
 
